@@ -352,11 +352,9 @@ app.delete('/admin/emails', async (req, res) => {
 app.put('/admin/users/toggle/:id', async (req, res) => {
   try {
     const actor = req.headers['iceberg-user'] || 'Desconocido';
-    const u = await db.get('SELECT email, active FROM users WHERE id=?', [req.params.id]);
-    if (!u) return res.status(404).json({error:'No encontrado'});
-    const newState = u.active ? 0 : 1;
-    await db.run('UPDATE users SET active=? WHERE id=?', [newState, req.params.id]);
-    await db.addAuditLog(actor, 'TOGGLE_USUARIO', u.email, `Estado cambiado a: ${newState ? 'Activo' : 'Inactivo'}`);
+    const result = await db.toggleUser(req.params.id);
+    if (!result) return res.status(404).json({error:'No encontrado'});
+    await db.addAuditLog(actor, 'TOGGLE_USUARIO', result.email, `Estado cambiado a: ${result.active ? 'Activo' : 'Inactivo'}`);
     res.json({ success: true });
   } catch (e) { res.status(500).send(); }
 });
@@ -364,8 +362,7 @@ app.put('/admin/users/toggle/:id', async (req, res) => {
 app.delete('/admin/users/:id', async (req, res) => {
   try {
     const actor = req.headers['iceberg-user'] || 'Desconocido';
-    const u = await db.get('SELECT email FROM users WHERE id=?', [req.params.id]);
-    await db.run('DELETE FROM users WHERE id=?', [req.params.id]);
+    const u = await db.deleteUser(req.params.id);
     if (u) await db.addAuditLog(actor, 'ELIMINAR_USUARIO', u.email, 'Usuario borrado de la base de datos');
     res.json({ success: true });
   } catch (e) { res.status(500).send(); }
@@ -373,7 +370,7 @@ app.delete('/admin/users/:id', async (req, res) => {
 
 app.get('/admin/audit-logs', async (req, res) => {
   try {
-    const logs = await db.all('SELECT TOP 200 * FROM audit_logs ORDER BY timestamp DESC');
+    const logs = await db.getAuditLogs(200);
     res.json(logs);
   } catch (e) { res.status(500).json([]); }
 });
@@ -403,7 +400,7 @@ app.post('/backup/restore', async (req, res) => {
     const fpath = path.join(BACKUP_DIR, filename);
     if (!fs.existsSync(fpath)) return res.status(404).json({ error: 'No existe' });
     const data = JSON.parse(fs.readFileSync(fpath, 'utf8'));
-    await db.run('DELETE FROM tickets');
+    await db.removeAll();
     for (const t of data) { await db.create(t); }
     res.json({ success: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -456,7 +453,8 @@ app.post('/auth/login', async (req, res) => {
       return res.json({ user: u, success: true });
     }
     if (Users.isMasterAdmin(emailLow) && password) {
-      const seed = Users.getAdminSeeds().find(s => s.email.toLowerCase() === emailLow);
+      const seeds = Users.getAdminSeeds ? Users.getAdminSeeds() : [];
+      const seed = seeds.find(s => s.email.toLowerCase() === emailLow);
       const valid = u.password || (seed ? seed.password : null);
       if (valid && password !== valid) return res.status(401).send();
     }
@@ -484,21 +482,21 @@ app.post('/auth/sync-microsoft', async (req, res) => {
 // NOTIFICATIONS ENDPOINTS
 app.get('/notifications', async (req, res) => {
   try {
-    const rows = await db.all('SELECT * FROM notifications ORDER BY timestamp DESC LIMIT 50');
+    const rows = await db.getNotifications(50);
     res.json(rows);
   } catch (e) { res.status(500).json([]); }
 });
 
 app.post('/notifications/:id/read', async (req, res) => {
   try {
-    await db.run('UPDATE notifications SET read = 1 WHERE id = ?', [req.params.id]);
+    await db.markNotificationRead(req.params.id);
     res.json({ success: true });
   } catch (e) { res.status(500).send(); }
 });
 
 app.post('/notifications/read-all', async (req, res) => {
   try {
-    await db.run('UPDATE notifications SET read = 1');
+    await db.markAllNotificationsRead();
     res.json({ success: true });
   } catch (e) { res.status(500).send(); }
 });
@@ -506,9 +504,7 @@ app.post('/notifications/read-all', async (req, res) => {
 async function createNotification(title, message, ticketId, userId = 'all', type = 'info') {
   try {
     const id = `notif-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    await db.run(`INSERT INTO notifications (id, userId, ticketId, title, message, type, timestamp)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                 [id, userId, ticketId, title, message, type, new Date().toISOString()]);
+    await db.createNotification({ id, userId, ticketId, title, message, type });
   } catch (e) { console.error('[NOTIF ERR]', e.message); }
 }
 

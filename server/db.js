@@ -7,7 +7,11 @@ const MONGO_URI = process.env.MONGODB_URL || process.env.MONGO_URL || process.en
 const safeHost = MONGO_URI.replace(/\/\/.*@/, '//***@');
 console.log('[DB] Conectando a:', safeHost);
 
-mongoose.connect(MONGO_URI)
+mongoose.connect(MONGO_URI, {
+  serverSelectionTimeoutMS: 10000,
+  socketTimeoutMS: 45000,
+  family: 4  // Forzar IPv4 para evitar problemas con ::1
+})
   .then(() => console.log('✅ MONGO DB CONECTADO CON ÉXITO | Sistema de Tickets Activo'))
   .catch(err => console.error('❌ ERROR CONEXIÓN MONGO:', err.message));
 
@@ -39,7 +43,8 @@ const userSchema = new mongoose.Schema({
   password: String,
   role: String,
   area: String,
-  active: { type: Boolean, default: true }
+  active: { type: Boolean, default: true },
+  requiresNameVerification: { type: Number, default: 0 }
 });
 
 const notificationSchema = new mongoose.Schema({
@@ -67,61 +72,66 @@ const Notification = mongoose.model('Notification', notificationSchema);
 const AuditLog = mongoose.model('AuditLog', auditSchema);
 
 module.exports = {
-  // Mock de compatibilidad para SQL querys simples de Auth
-  async get(q, p = []) {
-    if (q.includes('FROM users')) {
-      return await User.findOne({ email: p[0] }).lean();
-    }
-    if (q.includes('FROM audit_logs')) {
-      return await AuditLog.findOne({ targetId: p[0] }).sort({ timestamp: -1 }).lean();
-    }
-    return null;
-  },
-
-  async all(q, p = []) {
-    if (q.includes('FROM notifications')) {
-      return await Notification.find({ userId: p[0] }).sort({ timestamp: -1 }).lean();
-    }
-    if (q.includes('FROM audit_logs')) {
-      return await AuditLog.find({ targetId: p[0] }).sort({ timestamp: -1 }).lean();
-    }
-    return [];
-  },
-
-  async run(q, p = []) { 
-    // Capturamos inserts simples
-    return { lastID: Date.now() };
-  },
-
+  // ======= TICKETS =======
   async getAll() {
     return await Ticket.find({}).sort({ createdAt: -1 }).lean();
   },
-
   async getById(id) {
     return await Ticket.findOne({ id }).lean();
   },
-
   async create(t) {
     const fresh = new Ticket({ ...t, id: t.id || `T-${Date.now()}` });
     return await fresh.save();
   },
-
   async update(id, patch) {
     return await Ticket.findOneAndUpdate({ id }, { ...patch, updatedAt: new Date() }, { returnDocument: 'after' }).lean();
   },
-
   async remove(id) {
     await Ticket.deleteOne({ id });
   },
+  async removeAll() {
+    await Ticket.deleteMany({});
+  },
 
+  // ======= USERS (Mongoose directo) =======
+  async getUserById(id) {
+    return await User.findOne({ id }).lean();
+  },
+  async toggleUser(id) {
+    const u = await User.findOne({ id }).lean();
+    if (!u) return null;
+    const newState = !u.active;
+    await User.updateOne({ id }, { active: newState });
+    return { ...u, active: newState };
+  },
+  async deleteUser(id) {
+    const u = await User.findOne({ id }).lean();
+    await User.deleteOne({ id });
+    return u;
+  },
+
+  // ======= NOTIFICATIONS =======
+  async getNotifications(limit = 50) {
+    return await Notification.find({}).sort({ timestamp: -1 }).limit(limit).lean();
+  },
+  async markNotificationRead(id) {
+    await Notification.updateOne({ id }, { read: true });
+  },
+  async markAllNotificationsRead() {
+    await Notification.updateMany({}, { read: true });
+  },
+  async createNotification(n) {
+    const notif = new Notification({ ...n, id: n.id || `N-${Date.now()}` });
+    await notif.save();
+  },
+
+  // ======= AUDIT =======
   async addAuditLog(actor, action, targetId, details = '') {
     const log = new AuditLog({ actor, action, targetId, details });
     await log.save();
   },
-
-  async createNotification(n) {
-    const notif = new Notification({ ...n, id: n.id || `N-${Date.now()}` });
-    await notif.save();
+  async getAuditLogs(limit = 200) {
+    return await AuditLog.find({}).sort({ timestamp: -1 }).limit(limit).lean();
   },
 
   isBackup() { return false; }

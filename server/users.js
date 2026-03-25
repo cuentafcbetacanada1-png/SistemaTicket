@@ -102,6 +102,10 @@ class Users {
   static getAdminEmails() {
     return [...IT_MASTERS];
   }
+
+  static getAdminSeeds() {
+    return ADMIN_SEEDS;
+  }
 }
 
 module.exports = Users;

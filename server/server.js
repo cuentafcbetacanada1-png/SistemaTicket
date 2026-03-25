@@ -111,19 +111,6 @@ app.get('/health', (req, res) => res.json({
   timestamp: new Date().toISOString()
 }));
 
-// ENDPOINT DE PRUEBA MANUAL DE CORREO
-app.get('/api/test-email', async (req, res) => {
-  try {
-    const testMail = {
-      from: process.env.EMAIL_USER,
-      to: ALL_ADMINS,
-      subject: `🧪 PRUEBA TÉCNICA:IT Portal`,
-      html: `<h3>Prueba de envío exitosa</h3><p>Este correo confirma que el portal puede llegar a los 4 administradores: ${ALL_ADMINS}</p>`
-    };
-    await transporter.sendMail(testMail);
-    res.json({ success: true, message: 'Correo enviado a los 4 administradores' });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
 
 app.get('/tickets', async (req, res) => {
   try { res.json(await db.getAll()); } catch (e) { res.status(500).json({ error: e.message }); }

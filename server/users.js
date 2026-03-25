@@ -1,7 +1,11 @@
 'use strict';
-const db   = require('./db');
+const db   = require('./db'); // Ahora es un objeto con modelos Mongoose
 const path = require('path');
 const fs   = require('fs');
+const mongoose = require('mongoose');
+
+// Definición de Esquemas Locales para asegurar el modelo
+const User = mongoose.model('User');
 
 // Cargar lista maestra de correos corporativos
 const CORREOS_PATH = path.join(__dirname, 'data', 'correos_iceberg.json');
@@ -24,23 +28,12 @@ let IT_MASTERS = [
   'sistema.tickets@iceberg.com.co'
 ];
 
-// Cargar persistencia
 try {
   if (fs.existsSync(ADMIN_EMAILS_PATH)) {
     const data = JSON.parse(fs.readFileSync(ADMIN_EMAILS_PATH, 'utf8'));
     if (Array.isArray(data)) IT_MASTERS = data.map(e => e.toLowerCase().trim());
   }
-} catch (e) {
-  console.warn('[USERS] No se pudo cargar authorized_admins.json:', e.message);
-}
-
-function saveAdmins() {
-  try {
-    fs.writeFileSync(ADMIN_EMAILS_PATH, JSON.stringify(IT_MASTERS, null, 2));
-  } catch (e) {
-    console.error('[USERS] Error guardando authorized_admins.json:', e.message);
-  }
-}
+} catch (e) { }
 
 const ADMIN_SEEDS = [
   { id: 'aprendiz.sistemas', name: 'Juan Ducuara', email: 'aprendiz.sistemas@iceberg.com.co', role: 'admin', area: 'Sistemas', password: 'Pdr48159' },
@@ -53,15 +46,15 @@ const ADMIN_SEEDS = [
 class Users {
   static async initialize() {
     for (const admin of ADMIN_SEEDS) {
-      try { await Users.create(admin); } catch (e) {}
+      try { await Users.create(admin); } catch (e) { }
     }
+    console.log('[USERS] ✅ Administradores sincronizados en MongoDB.');
   }
 
   static async getByEmail(email) {
     if (!email) return null;
     const emailLow = email.toLowerCase().trim();
-    try { return await db.get('SELECT * FROM users WHERE email = ?', [emailLow]); }
-    catch (e) { return null; }
+    return await User.findOne({ email: emailLow }).lean();
   }
 
   static async create({ id, name, email, password, role, area }) {
@@ -69,50 +62,29 @@ class Users {
     const emailLow = email.toLowerCase().trim();
     const userId = id || emailLow.split('@')[0];
     const finalName = name || (emailLow.split('@')[0]);
-    try {
-      const exists = await db.get('SELECT id FROM users WHERE id = ?', [userId]);
-      if (exists) {
-        await db.run(`UPDATE users SET name = ?, email = ?, password = ?, role = ?, area = ? WHERE id = ?`,
-                     [finalName, emailLow, password || null, role || 'user', area || 'General', userId]);
-      } else {
-        await db.run(`INSERT INTO users (id, name, email, password, role, area, active)
-                     VALUES (?, ?, ?, ?, ?, ?, 1)`, 
-                     [userId, finalName, emailLow, password || null, role || 'user', area || 'General']);
-      }
-    } catch (e) { console.error('[USERS CREATE ERR]', e.message); }
-    return { id: userId, email: emailLow, name: finalName, role: role || 'user' };
+    
+    const u = await User.findOneAndUpdate(
+      { id: userId }, 
+      { id: userId, name: finalName, email: emailLow, password: password || null, role: role || 'user', area: area || 'General', active: true },
+      { upsert: true, new: true }
+    ).lean();
+    return u;
   }
 
   static async getAll() {
-    try { return await db.all('SELECT id, name, email, role, area, active FROM users'); }
-    catch (e) { return []; }
+    return await User.find({}, 'id name email role area active').lean();
   }
 
   static async count() {
-    try {
-      const row = await db.get('SELECT COUNT(*) as cnt FROM users');
-      return row ? row.cnt : 0;
-    } catch (e) { return 0; }
+    return await User.countDocuments();
   }
 
   static async update(id, data) {
-    try {
-      const fields = [];
-      const values = [];
-      if (data.name)  { fields.push('name = ?');  values.push(data.name); }
-      if (data.role)  { fields.push('role = ?');  values.push(data.role); }
-      if (data.area)  { fields.push('area = ?');  values.push(data.area); }
-      if (data.password) { fields.push('password = ?'); values.push(data.password); }
-      if (fields.length === 0) return null;
-      values.push(id);
-      await db.run(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, values);
-      return await db.get('SELECT id, name, email, role, area, active FROM users WHERE id = ?', [id]);
-    } catch (e) { return null; }
+    return await User.findOneAndUpdate({ id }, data, { new: true }).lean();
   }
 
   static async deactivate(id) {
-    try { await db.run('UPDATE users SET active = 0 WHERE id = ?', [id]); }
-    catch (e) { console.error('[USERS DEACTIVATE ERR]', e.message); }
+    await User.updateOne({ id }, { active: false });
   }
 
   static isCorporate(email) {
@@ -129,25 +101,6 @@ class Users {
 
   static getAdminEmails() {
     return [...IT_MASTERS];
-  }
-
-  static async addAdminEmail(email) {
-    if (!email) return;
-    const low = email.toLowerCase().trim();
-    if (!IT_MASTERS.includes(low)) {
-      IT_MASTERS.push(low);
-      saveAdmins();
-    }
-  }
-
-  static async removeAdminEmail(email) {
-    if (!email) return;
-    const low = email.toLowerCase().trim();
-    const idx = IT_MASTERS.indexOf(low);
-    if (idx >= 0) {
-      IT_MASTERS.splice(idx, 1);
-      saveAdmins();
-    }
   }
 }
 

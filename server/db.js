@@ -103,7 +103,7 @@ module.exports = {
   },
 
   async update(id, patch) {
-    return await Ticket.findOneAndUpdate({ id }, { ...patch, updatedAt: new Date() }, { new: true }).lean();
+    return await Ticket.findOneAndUpdate({ id }, { ...patch, updatedAt: new Date() }, { returnDocument: 'after' }).lean();
   },
 
   async remove(id) {

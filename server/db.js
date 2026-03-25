@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
-// Prioridad: MONGODB_URL (Railway auto-ref) > MONGO_URL (manual) > MONGO_URI > localhost
-const MONGO_URI = process.env.MONGODB_URL || process.env.MONGO_URL || process.env.MONGO_URI || 'mongodb://localhost:27017/iceberg_tickets';
+// Prioridad: MONGO_PUBLIC_URL (proxy público) > MONGODB_URL > MONGO_URL > MONGO_URI > localhost
+const MONGO_URI = process.env.MONGO_PUBLIC_URL || process.env.MONGODB_URL || process.env.MONGO_URL || process.env.MONGO_URI || 'mongodb://localhost:27017/iceberg_tickets';
 
 // Log seguro: solo muestra el host, no la contraseña
 const safeHost = MONGO_URI.replace(/\/\/.*@/, '//***@');

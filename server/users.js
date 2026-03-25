@@ -103,6 +103,22 @@ class Users {
     return [...IT_MASTERS];
   }
 
+  static addAdminEmail(email) {
+    if (!email) return;
+    const low = email.toLowerCase().trim();
+    if (!IT_MASTERS.includes(low)) {
+      IT_MASTERS.push(low);
+      try { fs.writeFileSync(ADMIN_EMAILS_PATH, JSON.stringify(IT_MASTERS, null, 2)); } catch (e) {}
+    }
+  }
+
+  static removeAdminEmail(email) {
+    if (!email) return;
+    const low = email.toLowerCase().trim();
+    IT_MASTERS = IT_MASTERS.filter(e => e !== low);
+    try { fs.writeFileSync(ADMIN_EMAILS_PATH, JSON.stringify(IT_MASTERS, null, 2)); } catch (e) {}
+  }
+
   static getAdminSeeds() {
     return ADMIN_SEEDS;
   }

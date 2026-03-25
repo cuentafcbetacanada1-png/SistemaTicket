@@ -66,7 +66,7 @@ class Users {
     const u = await User.findOneAndUpdate(
       { id: userId }, 
       { id: userId, name: finalName, email: emailLow, password: password || null, role: role || 'user', area: area || 'General', active: true },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     ).lean();
     return u;
   }
@@ -80,7 +80,7 @@ class Users {
   }
 
   static async update(id, data) {
-    return await User.findOneAndUpdate({ id }, data, { new: true }).lean();
+    return await User.findOneAndUpdate({ id }, data, { returnDocument: 'after' }).lean();
   }
 
   static async deactivate(id) {

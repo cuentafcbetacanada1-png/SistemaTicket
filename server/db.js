@@ -1,9 +1,11 @@
 const mongoose = require('mongoose');
 
-// Prioridad: MONGO_URL (Railway) > MONGODB_URL (Railway auto) > MONGO_URI > localhost
-const MONGO_URI = process.env.MONGO_URL || process.env.MONGODB_URL || process.env.MONGO_URI || 'mongodb://localhost:27017/iceberg_tickets';
+// Prioridad: MONGODB_URL (Railway auto-ref) > MONGO_URL (manual) > MONGO_URI > localhost
+const MONGO_URI = process.env.MONGODB_URL || process.env.MONGO_URL || process.env.MONGO_URI || 'mongodb://localhost:27017/iceberg_tickets';
 
-console.log('[DB] Conectando a MongoDB...', MONGO_URI.includes('railway') ? '(Railway Internal)' : '(Local)');
+// Log seguro: solo muestra el host, no la contraseña
+const safeHost = MONGO_URI.replace(/\/\/.*@/, '//***@');
+console.log('[DB] Conectando a:', safeHost);
 
 mongoose.connect(MONGO_URI)
   .then(() => console.log('✅ MONGO DB CONECTADO CON ÉXITO | Sistema de Tickets Activo'))

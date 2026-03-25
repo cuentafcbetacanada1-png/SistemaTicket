@@ -1,0 +1,75 @@
+{
+  "version": "1.0",
+  "type": "auto",
+  "server": "Transportes Iceberg Colombia — TIcket Desk",
+  "createdAt": "2026-03-13T05:00:00.145Z",
+  "ticketCount": 3,
+  "tickets": [
+    {
+      "id": "Ticket # - 8",
+      "title": "test",
+      "category": "cambio-equipo",
+      "priority": "baja",
+      "status": "abierto",
+      "description": "test",
+      "area": "Servicio al Cliente",
+      "location": "",
+      "asset": "test",
+      "software": "test",
+      "phone": "test",
+      "assignedTo": "Sin asignar",
+      "createdBy": {
+        "id": "ed70fab9-3b0a-4095-b994-628a4c8a7193",
+        "name": "Juan Ducuara",
+        "email": "aprendiz.sistemas@iceberg.com.co"
+      },
+      "notes": [],
+      "createdAt": "2026-03-12T21:00:28.046Z",
+      "updatedAt": "2026-03-12T21:00:28.046Z"
+    },
+    {
+      "id": "Ticket # - 7",
+      "title": "test",
+      "category": "cambio-equipo",
+      "priority": "baja",
+      "status": "abierto",
+      "description": "test",
+      "area": "Sistemas",
+      "location": "",
+      "asset": "test",
+      "software": "test",
+      "phone": "3181261355",
+      "assignedTo": "Sin asignar",
+      "createdBy": {
+        "id": "viviana.rico",
+        "name": "Viviana Rico",
+        "email": "viviana.rico@iceberg.com.co"
+      },
+      "notes": [],
+      "createdAt": "2026-03-12T20:45:21.914Z",
+      "updatedAt": "2026-03-12T20:45:21.914Z"
+    },
+    {
+      "id": "Ticket # - 5",
+      "title": "test",
+      "category": "cambio-equipo",
+      "priority": "baja",
+      "status": "abierto",
+      "description": "test",
+      "area": "Sistemas",
+      "location": "",
+      "asset": "test",
+      "software": "test",
+      "phone": "3181261355",
+      "assignedTo": "Sin asignar",
+      "createdBy": {
+        "id": "viviana.rico",
+        "name": "Viviana Rico",
+        "email": "viviana.rico@iceberg.com.co"
+      },
+      "notes": [],
+      "createdAt": "2026-03-12T20:41:39.867Z",
+      "updatedAt": "2026-03-12T20:41:39.867Z"
+    }
+  ]
+}

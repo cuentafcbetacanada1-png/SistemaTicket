@@ -1,0 +1,26 @@
+{
+  "tickets": [
+    {
+      "id": "ICE-0010",
+      "title": "test",
+      "category": "instalacion-equipo",
+      "priority": "baja",
+      "status": "cerrado",
+      "description": "test",
+      "area": "HSEQ",
+      "location": "",
+      "asset": "test",
+      "software": "test",
+      "phone": "3181261355",
+      "assignedTo": "Sin asignar",
+      "createdBy": {
+        "id": "aprendiz.sistemas",
+        "name": "Juan Ducuara",
+        "email": "aprendiz.sistemas@iceberg.com.co"
+      },
+      "notes": [],
+      "createdAt": "2026-03-12T12:55:50.286Z",
+      "updatedAt": "2026-03-12T13:05:00.886Z"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "id_seq": 14,
+    "id": "Ticket #14",
+    "title": "Acceso / Permisos",
+    "description": "Prueba #1",
+    "category": "acceso-permisos",
+    "priority": "media",
+    "status": "abierto",
+    "area": "Sistemas",
+    "location": "",
+    "asset": "",
+    "software": "",
+    "assignedTo": "Sin asignar",
+    "createdBy": {
+      "id": "aprendiz.sistemas",
+      "name": "Juan Ducuara",
+      "email": "aprendiz.sistemas@iceberg.com.co"
+    },
+    "phone": "3181261355",
+    "createdAt": "2026-03-21T13:52:55.817Z",
+    "updatedAt": "2026-03-21T13:52:55.817Z",
+    "notes": [],
+    "history": [
+      {
+        "date": "2026-03-21T13:52:55.817Z",
+        "action": "Creado",
+        "user": "Juan Ducuara"
+      }
+    ]
+  }
+]

@@ -1,0 +1,55 @@
+{
+  "version": "1.0",
+  "type": "auto",
+  "server": "Transportes Iceberg Colombia — TIcket Desk",
+  "createdAt": "2026-03-18T05:00:00.146Z",
+  "ticketCount": 2,
+  "tickets": [
+    {
+      "id": "Ticket #1",
+      "title": "Verification Ticket",
+      "description": "Checking if ticket ID format is Ticket #N and not wrapping.",
+      "category": "instalacion-software",
+      "priority": "baja",
+      "status": "abierto",
+      "area": "Agencias",
+      "location": "",
+      "asset": "",
+      "software": "",
+      "assignedTo": "Sin asignar",
+      "createdBy": {
+        "id": "aprendiz.sistemas",
+        "name": "Juan Ducuara",
+        "email": "aprendiz.sistemas@iceberg.com.co"
+      },
+      "phone": "",
+      "createdAt": "2026-03-13T20:49:24.881Z",
+      "updatedAt": "2026-03-13T20:49:24.881Z",
+      "notes": [],
+      "history": "[]"
+    },
+    {
+      "id": "Ticket-0001",
+      "title": "Test Ticket for Verification",
+      "description": "This is a test description for verifying the ticket management UI.",
+      "category": "cambio-equipo",
+      "priority": "baja",
+      "status": "abierto",
+      "area": "Agencias",
+      "location": "",
+      "asset": "",
+      "software": "",
+      "assignedTo": "Sin asignar",
+      "createdBy": {
+        "id": "aprendiz.sistemas",
+        "name": "Juan Ducuara",
+        "email": "aprendiz.sistemas@iceberg.com.co"
+      },
+      "phone": "",
+      "createdAt": "2026-03-13T20:47:09.376Z",
+      "updatedAt": "2026-03-13T20:47:09.376Z",
+      "notes": [],
+      "history": "[]"
+    }
+  ]
+}

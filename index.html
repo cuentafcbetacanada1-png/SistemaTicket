@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistema de Tickets — Transportes Iceberg Colombia S.A.</title>
+  <meta name="description" content="Sistema corporativo de gestión de tickets de soporte técnico." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+
+    .flex { display: flex; }
+    .flex-col { flex-direction: column; }
+    .flex-1 { flex: 1 1 0%; }
+    .flex-shrink-0 { flex-shrink: 0; }
+    .h-full { height: 100%; }
+    .w-full { width: 100%; }
+    .w-64 { width: 16rem; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .gap-2 { gap: 0.5rem; }
+    .gap-3 { gap: 0.75rem; }
+    .gap-4 { gap: 1rem; }
+    .p-6 { padding: 1.5rem; }
+    .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+    .h-16 { height: 4rem; }
+    .bg-white { background-color: #ffffff; }
+    .bg-slate-50 { background-color: #f8fafc; }
+    .border-r { border-right-width: 1px; }
+    .border-b { border-bottom-width: 1px; }
+    .border-slate-100 { border-color: #f1f5f9; }
+    .border-slate-200 { border-color: #e2e8f0; }
+    .overflow-hidden { overflow: hidden; }
+    .overflow-y-auto { overflow-y: auto; }
+    .font-bold { font-weight: 700; }
+    .text-sm { font-size: 0.875rem; }
+    .text-slate-500 { color: #64748b; }
+    .text-slate-800 { color: #1e293b; }
+  </style>
+  <link rel="stylesheet" href="style.css?v=3.5" />
+</head>
+
+<body>
+
+  <div id="screen-login" class="screen active" style="position:relative; overflow:hidden;">
+    <div class="login-aura aura-1"></div>
+    <div class="login-aura aura-2"></div>
+    <div class="login-aura aura-3"></div>
+
+    <div id="view-login" style="position:relative; z-index:10; width: 100%; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 40px;">
+      <div class="login-card-refined split-card">
+        
+        <div class="login-visual-side">
+          <div class="visual-content">
+             <img src="assets/logo-iceberg.png" alt="Iceberg" class="login-logo-sidebar" style="height:100px; width:auto; margin-bottom:24px; filter: brightness(0) invert(1);">
+             <div class="badge-new">Portal Corporativo</div>
+             <h2>Centro de Servicios IT</h2>
+             <p>Plataforma tecnológica oficial para la gestión, seguimiento y resolución de incidencias del equipo de Transportes Iceberg.</p>
+          </div>
+        </div>
+
+        <div class="login-form-side">
+          <div class="login-brand-minimal">
+            <h1 class="login-title">Bienvenidos al sistema de tickets</h1>
+            <p class="login-subtitle">Accede a tu cuenta corporativa</p>
+          </div>
+
+        <div id="login-methods-stage">
+          <button id="btn-ms-login" class="btn-ms-premium" type="button">
+            <svg width="20" height="20" viewBox="0 0 21 21">
+              <rect x="1" y="1" width="9" height="9" fill="#F25022" />
+              <rect x="11" y="1" width="9" height="9" fill="#7FBA00" />
+              <rect x="1" y="11" width="9" height="9" fill="#00A4EF" />
+              <rect x="11" y="11" width="9" height="9" fill="#FFB900" />
+            </svg>
+            <span id="ms-btn-txt">Entrar con Microsoft 365</span>
+            <span class="spinner ms-spinner" id="ms-spinner" style="display:none"></span>
+          </button>
+
+          <div class="login-divider-refined">
+            <span>o ingresa con tu correo corporativo</span>
+          </div>
+
+          <form id="form-login" novalidate>
+            <div class="fg">
+              <label for="l-email">Correo Electrónico</label>
+              <div class="fw" style="position:relative;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute; left:16px; top:50%; transform:translateY(-50%); width:18px; height:18px; color:var(--t3); pointer-events:none;">
+                   <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+                </svg>
+                <input type="email" id="l-email" placeholder="usuario@iceberg.com.co" style="padding-left:48px;" required />
+              </div>
+              <p class="ferr" id="err-lemail">Correo no reconocido.</p>
+            </div>
+
+            <div class="fg" id="pass-field" style="display:none">
+              <div id="admin-detected-notice" class="admin-notice">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+                <strong>Acceso Administrativo</strong>
+              </div>
+              <label for="l-pass">Contraseña</label>
+              <div class="fw" style="position:relative;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute; left:16px; top:50%; transform:translateY(-50%); width:18px; height:18px; color:var(--t3); pointer-events:none;">
+                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                <input type="password" id="l-pass" placeholder="••••••••" style="padding-left:48px;" />
+              </div>
+              <p class="ferr" id="err-lpass">Contraseña incorrecta.</p>
+            </div>
+
+            <div class="login-opts" id="remember-row"
+              style="display:none; align-items:center; justify-content:space-between; margin-top:10px;">
+              <label class="chk" style="display:flex; align-items:center; gap:6px; font-size:0.75rem; color:var(--t2);">
+                <input type="checkbox" id="l-remember" /> Mantener sesión
+              </label>
+              <button type="button" id="btn-back-email" class="link-sm"
+                style="font-size:0.75rem; color:var(--t3); font-weight:600;">← Volver</button>
+            </div>
+
+            <button type="submit" class="btn-primary full login-submit-btn" id="login-btn" style="margin-top:24px; background:var(--primary-grad); border:none; box-shadow:0 8px 24px rgba(37, 99, 235, 0.3);">
+              <span id="login-txt">Continuar</span>
+              <span class="spinner" id="login-spinner" style="display:none"></span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+        <div id="name-verify-step" style="display:none;">
+          <div class="nv-header" style="text-align:center; margin-bottom:24px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              style="width:40px;height:40px;color:var(--primary);margin-bottom:10px;">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+            <h2 style="font-size:1.3rem; font-weight:800; color: var(--t1); margin-bottom:8px;">Verificación</h2>
+            <p style="font-size:0.85rem; color: var(--t2); line-height:1.5;">Confirma tu nombre completo.</p>
+          </div>
+
+          <div class="fg" style="margin-bottom:20px;">
+            <div class="fw">
+              <input type="text" id="nv-name" placeholder="Tu nombre registrado" />
+            </div>
+            <p class="ferr" id="err-nv-name">Nombre incorrecto.</p>
+          </div>
+
+          <button type="button" class="btn-primary full" id="btn-nv-verify">
+            <span id="nv-btn-txt">Verificar</span>
+            <span class="spinner" id="nv-spinner" style="display:none"></span>
+          </button>
+          <button type="button" id="btn-nv-back"
+            style="width:100%; background:transparent; border:none; color: var(--t3); font-size:0.75rem; cursor:pointer; margin-top:10px;">←
+            Volver</button>
+        </div>
+        
+        <div class="login-legal">
+          © 2026 Transportes Iceberg Colombia S.A.
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="screen-app" class="screen" style="display:none; height:100vh; overflow:hidden;">
+    <div class="flex h-full w-full overflow-hidden">
+
+      <aside class="w-64 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col" id="sidebar">
+        <!-- Sidebar logo & branding -->
+        <div class="sidebar-branding border-b border-slate-100" style="padding: 24px 20px;">
+          <img src="assets/logo-iceberg.png" alt="Logo" style="height:72px; width:auto; margin-bottom:12px;">
+          <div class="leading-tight">
+            <div class="font-bold text-slate-900" style="font-size:1.35rem; letter-spacing:-0.02em; line-height:1.1;">Transportes Iceberg</div>
+            <div class="text-primary uppercase tracking-wider font-extrabold" style="font-size:0.95rem; margin-top:4px;">Sistema de tickets</div>
+          </div>
+        </div>
+
+      <nav class="sb-nav user-nav" id="user-nav">
+        <span class="nav-label">MI PORTAL</span>
+        <button class="nav-item" data-view="dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7" />
+            <rect x="14" y="3" width="7" height="7" />
+            <rect x="14" y="14" width="7" height="7" />
+            <rect x="3" y="14" width="7" height="7" />
+          </svg>
+          <span>Panel principal</span>
+        </button>
+        <button class="nav-item accent-item" data-view="new-ticket">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="16" />
+            <line x1="8" y1="12" x2="16" y2="12" />
+          </svg>
+          <span>Nuevo ticket</span>
+        </button>
+        <button class="nav-item" data-view="my-tickets">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+          </svg>
+          <span>Mis tickets</span>
+          <span class="nav-cnt" id="my-cnt">0</span>
+        </button>
+        <button class="nav-item" data-view="contact">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path
+              d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+          </svg>
+          <span>Contacto IT</span>
+        </button>
+      </nav>
+
+
+
+      <nav class="sb-nav admin-nav" id="admin-nav" style="display:none">
+        <span class="nav-label admin-label">Panel Administrativo</span>
+        <button class="nav-item" data-view="admin-dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+          </svg>
+          <span>Dashboard Admin</span>
+        </button>
+        <button class="nav-item" data-view="admin-tickets">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="8" y1="6" x2="21" y2="6" />
+            <line x1="8" y1="12" x2="21" y2="12" />
+            <line x1="8" y1="18" x2="21" y2="18" />
+            <line x1="3" y1="6" x2="3.01" y2="6" />
+            <line x1="3" y1="12" x2="3.01" y2="12" />
+            <line x1="3" y1="18" x2="3.01" y2="18" />
+          </svg>
+          <span>Gestión de tickets</span>
+          <span class="nav-cnt" id="admin-open-cnt">0</span>
+        </button>
+        <button class="nav-item" data-view="admin-users">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          <span>Usuarios y actividad</span>
+        </button>
+        <button class="nav-item" data-view="admin-backup">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          <span>Copia de seguridad</span>
+        </button>
+        <button class="nav-item" data-view="admin-audit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4l3 3"/>
+          </svg>
+          <span>Registros</span>
+        </button>
+      </nav>
+
+
+    </aside>
+
+    <div id="sb-overlay" class="sb-overlay"></div>
+
+
+
+    <div class="main-wrap">
+      <header class="topbar">
+        <div class="topbar-inner">
+          <button class="topbar-menu" id="sb-open" aria-label="Menú">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+          <div class="topbar-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input type="text" id="global-search" placeholder="Buscar ticket o ID..." aria-label="Buscar" />
+          </div>
+          <div class="topbar-right">
+            <button class="topbar-btn" onclick="APP.nav('new-ticket')">
+               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="16" height="16"><path d="M12 5v14M5 12h14"/></svg>
+               <span>Nuevo Ticket</span>
+            </button>
+            <div class="notif-wrapper" id="notif-wrapper">
+              <button class="notif-btn" id="notif-btn" title="Notificaciones">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+                <span class="notif-badge" id="notif-badge" style="display:none">0</span>
+              </button>
+              <div class="notif-panel" id="notif-panel">
+                <div class="notif-h">
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    <img src="assets/logo-iceberg.png" alt="Logo" style="height:24px; width:auto; opacity:0.9;">
+                    <h4>Notificaciones</h4>
+                  </div>
+                  <button id="notif-read-all">Marcar todo</button>
+                </div>
+                <div class="notif-b" id="notif-list">
+                  <div style="padding:40px 20px; text-align:center; color:var(--t3); font-size:0.8rem;">
+                    No hay notificaciones nuevas
+                  </div>
+                </div>
+                <div style="padding:15px; text-align:center; border-top:1px solid var(--border-muted); background:rgba(255,255,255,0.3);">
+                  <span style="font-size:11px; color:var(--t3); font-weight:600;">Transportes Iceberg Colombia S.A.</span>
+                </div>
+              </div>
+            </div>
+            <div class="user-dropdown-wrapper">
+              <div class="tb-profile" id="tb-dropdown-trigger">
+                <div class="tb-user-info">
+                  <span class="tb-name" id="u-name-top">Cargando...</span>
+                  <span class="tb-role" id="u-role-top">ADMINISTRADOR IT</span>
+                </div>
+                <div class="tb-avatar-container">
+                  <img src="assets/PhotoIce.png" class="tb-avatar-img" alt="User Photo">
+                </div>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-left:4px; opacity:0.6"><path d="m6 9 6 6 6-6"/></svg>
+              </div>
+
+              <div class="u-dropdown-panel" id="u-dropdown">
+                <div class="ud-header">
+                   <div class="ud-avatar"><img src="assets/PhotoIce.png" alt="Avatar"></div>
+                   <div class="ud-meta">
+                      <div class="ud-name" id="ud-name-full">...</div>
+                      <div class="ud-email" id="ud-email-full">...</div>
+                   </div>
+                </div>
+                <div class="ud-menu">
+                   <button class="ud-item" onclick="APP.nav('mis-tickets')">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                      Mi Perfil
+                   </button>
+                   <button class="ud-item" onclick="APP.showSettings()">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                      Configuración
+                   </button>
+                   <div style="height:1px; background:var(--border-thick); margin:8px 12px;"></div>
+                   <button class="ud-item ud-logout" id="btn-logout-new">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                      Cerrar Sesión
+                   </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="content">
+
+        <section class="view view-pane" id="view-dashboard" style="display:none">
+          <div class="ph">
+            <div>
+              <h2 class="pt" id="dash-title">Panel principal</h2>
+              <p class="ps" id="greeting">Bienvenido al sistema de soporte.</p>
+            </div>
+            <div class="quick-actions-bar" style="display:flex; gap:12px; align-items:center;">
+              <button class="btn-primary" onclick="APP.nav('new-ticket')" style="display:flex; align-items:center; gap:8px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:16px;height:16px"><path d="M12 5v14M5 12h14"/></svg>
+                Nuevo Ticket
+              </button>
+              <button class="btn-ghost" onclick="APP.quickSupport()" style="display:flex; align-items:center; gap:8px; border:1px solid var(--border);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:16px;height:16px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Soporte Urgente
+              </button>
+            </div>
+          </div>
+
+          <div class="stats-row" id="user-stats">
+            <div class="stat-card" style="--ico-bg: #eff6ff; --ico-c: #335495;">
+              <div class="stat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+              <div class="stat-detail">
+                <div class="stat-val" id="st-total">0</div>
+                <div class="stat-lbl">Total Tickets</div>
+              </div>
+            </div>
+            <div class="stat-card" style="--ico-bg: #fff7ed; --ico-c: #f97316;">
+              <div class="stat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+              <div class="stat-detail">
+                <div class="stat-val" id="st-open">0</div>
+                <div class="stat-lbl">Abiertos</div>
+              </div>
+            </div>
+            <div class="stat-card" style="--ico-bg: #f0fdf4; --ico-c: #22c55e;">
+              <div class="stat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></div>
+              <div class="stat-detail">
+                <div class="stat-val" id="st-prog">0</div>
+                <div class="stat-lbl">En progreso</div>
+              </div>
+            </div>
+            <div class="stat-card" style="--ico-bg: #f8fafc; --ico-c: #64748b;">
+              <div class="stat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+              <div class="stat-detail">
+                <div class="stat-val" id="st-done">0</div>
+                <div class="stat-lbl">Resueltos / Cerrados</div>
+              </div>
+            </div>
+            <div class="stat-card" style="--ico-bg: #fef2f2; --ico-c: #ef4444;">
+              <div class="stat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+              <div class="stat-detail">
+                <div class="stat-val" id="st-crit">0</div>
+                <div class="stat-lbl">Críticos Activos</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dash-cols">
+            <div class="dash-card">
+              <div class="dc-head">
+                <h3>Mis tickets recientes</h3>
+                <button class="link-btn" onclick="APP.nav('my-tickets')">Ver todos →</button>
+              </div>
+              <div id="dash-recent" class="table-wrapper">
+                <table class="refined-table" id="table-recent">
+                  <thead>
+                    <tr>
+                      <th>Tickets</th>
+                      <th>Asunto / Categoría</th>
+                      <th>Solicitante</th>
+                      <th>Estado</th>
+                      <th>Prioridad</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="dash-card">
+              <div class="dc-head">
+                <h3>Distribución por categoría</h3>
+              </div>
+              <div id="chart-cats" class="p-6"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view view-pane" id="view-new-ticket" style="display:none">
+          <div class="new-ticket-container">
+            <div class="ph" style="margin-bottom:24px;">
+              <div>
+                <h2 class="pt" style="font-size:2rem; font-weight: 850; letter-spacing:-0.03em; margin-bottom: 2px;">Crear nuevo Ticket</h2>
+                <p class="ps" style="font-size:1.05rem; color: #475569;">Completa la información para que el equipo técnico pueda atenderte más rápido.</p>
+              </div>
+            </div>
+
+            <div class="step-box">
+              <h4 class="step-title">
+                <span class="step-circle active">1</span>
+                ¿Qué tipo de problema estás teniendo?
+              </h4>
+               <div class="cat-grid" id="cat-grid">
+                  <button type="button" class="cat-card" data-cat="cambio-equipo">
+                    <div class="cat-ico-box cat-hw">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <rect x="2" y="3" width="20" height="14" rx="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" />
+                      </svg>
+                    </div>
+                    <span class="cat-name">Cambio de equipo</span>
+                    <span class="cat-desc">Hardware o periféricos</span>
+                  </button>
+                  <button type="button" class="cat-card" data-cat="reparacion-arreglo">
+                    <div class="cat-ico-box cat-rep">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                      </svg>
+                    </div>
+                    <span class="cat-name">Reparación / Arreglo</span>
+                  </button>
+                  <button type="button" class="cat-card" data-cat="falla-software">
+                    <div class="cat-ico-box cat-sw">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+                      </svg>
+                    </div>
+                    <span class="cat-name">Falla en programa</span>
+                  </button>
+                  <button type="button" class="cat-card" data-cat="instalacion-equipo">
+                    <div class="cat-ico-box cat-inst-hw">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <rect x="4" y="4" width="16" height="16" rx="2" ry="2" /><path d="M12 8v8M8 12h8" />
+                      </svg>
+                    </div>
+                    <span class="cat-name">Instalación de equipo</span>
+                  </button>
+                  <button type="button" class="cat-card" data-cat="instalacion-software">
+                    <div class="cat-ico-box cat-inst-sw">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <path d="M12 17V3m0 14l-4-4m4 4l4-4M2 17l.62 2.48A2 2 0 0 0 4.56 21h14.88a2 2 0 0 0 1.94-1.52L22 17" />
+                      </svg>
+                    </div>
+                    <span class="cat-name">Instalación de software</span>
+                  </button>
+                  <button type="button" class="cat-card" data-cat="acceso-permisos">
+                    <div class="cat-ico-box cat-acc">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                      </svg>
+                    </div>
+                    <span class="cat-name">Acceso / Permisos</span>
+                  </button>
+                  <button type="button" class="cat-card" data-cat="red-conectividad">
+                    <div class="cat-ico-box cat-net">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.59 16.11a6 6 0 0 1 6.82 0M12 20h.01" />
+                      </svg>
+                    </div>
+                    <span class="cat-name">Red / Conectividad</span>
+                  </button>
+                  <button type="button" class="cat-card" data-cat="otro">
+                    <div class="cat-ico-box cat-other">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01" />
+                      </svg>
+                    </div>
+                    <span class="cat-name">Otro</span>
+                  </button>
+                </div>
+            </div>
+
+            <div class="step-box">
+              <h4 class="step-title">
+                <span class="step-circle active">2</span>
+                Cuéntanos los detalles
+              </h4>
+              <form id="form-ticket" class="ticket-form" novalidate>
+                <input type="hidden" id="t-cat" />
+                <div class="ticket-form-grid">
+                  <div class="ticket-col-left">
+                    <div class="fg">
+                      <label for="t-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        Asunto de la solicitud <span class="req">*</span>
+                      </label>
+                      <input type="text" id="t-title" placeholder="Selecciona una categoría arriba" readonly class="input-readonly"/>
+                      <p class="ferr" id="err-title">Escribe un título para tu ticket</p>
+                    </div>
+                    <div class="fg">
+                      <label for="t-desc">¿Qué sucede exactamente? <span class="req">*</span></label>
+                      <textarea id="t-desc" placeholder="Describe el problema paso a paso. Si hay errores, escríbelos aquí..."></textarea>
+                      <p class="ferr" id="err-desc">La descripción es necesaria para ayudarte</p>
+                    </div>
+                  </div>
+                  
+                  <div class="ticket-col-right">
+                    <div class="fg">
+                      <label for="t-priority">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        Impacto del problema <span class="req">*</span>
+                      </label>
+                      <select id="t-priority" disabled style="background-color: var(--border-muted); cursor: not-allowed; opacity: 0.8;">
+                        <option value="baja" selected>Baja</option>
+                        <option value="media">Media</option>
+                        <option value="alta">Alta</option>
+                        <option value="critica">Crítica</option>
+                      </select>
+                    </div>
+                    <div class="fg">
+                      <label for="t-area">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        Área<span class="req">*</span>
+                      </label>
+                      <select id="t-area">
+                        <option value="" disabled selected>Selecciona el área...</option>
+                        <option value="Sistemas">Sistemas</option>
+                        <option>Agencias</option>
+                        <option>Almacén</option>
+                        <option>Comercial</option>
+                        <option>Compras</option>
+                        <option>Contabilidad</option>
+                        <option>Despachos</option>
+                        <option>Gerencia</option>
+                        <option>HSEQ</option>
+                        <option>Jurídica</option>
+                        <option>Mantenimiento</option>
+                        <option>Servicio al Cliente</option>
+                        <option>Talento Humano</option>
+                        <option>Tráfico</option>
+                      </select>
+                      <p class="ferr" id="err-area">Selecciona un área vinculada</p>
+                    </div>
+                    <div class="fg">
+                      <label for="t-phone">Anydesk o Celular</label>
+                      <input type="tel" id="t-phone" placeholder="Ext: 123 o 3xx xxx xxxx" />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="ticket-form-ft">
+                  <button type="button" class="btn-ghost" onclick="APP.nav('dashboard')">Cancelar</button>
+                  <button type="submit" class="btn-primary" id="btn-submit-ticket">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" width="22" height="22" style="margin-right:12px;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    <span id="submit-txt">Enviar Solicitud</span>
+                    <span class="spinner" id="submit-spinner" style="display:none"></span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <section class="view view-pane" id="view-my-tickets" style="display:none">
+          <div class="ph">
+            <div>
+              <h2 class="pt">Mis tickets</h2>
+              <p class="ps">Solicitudes que has enviado al equipo de IT.</p>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn-ghost" onclick="APP.refreshData()" title="Actualizar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                  <polyline points="23 4 23 10 17 10" />
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                </svg>
+                Actualizar
+              </button>
+              <button class="btn-primary" onclick="APP.nav('new-ticket')">+ Nuevo ticket</button>
+            </div>
+          </div>
+          <div class="filters-bar">
+            <div class="f-group">
+              <label>Estado</label>
+              <select id="mf-status" class="fsel" onchange="APP.renderMyTickets()">
+                <option value="">Todos</option>
+                <option value="abierto">Abiertos</option>
+                <option value="en-progreso">En progreso</option>
+                <option value="resuelto">Resueltos</option>
+                <option value="cerrado">Cerrados</option>
+              </select>
+            </div>
+            <div class="f-group">
+              <label>Prioridad</label>
+              <select id="mf-priority" class="fsel" onchange="APP.renderMyTickets()">
+                <option value="">Todas</option>
+                <option value="critica">Crítica</option>
+                <option value="alta">Alta</option>
+                <option value="media">Media</option>
+                <option value="baja">Baja</option>
+              </select>
+            </div>
+            <div class="f-group">
+              <label>Categoría</label>
+              <select id="mf-cat" class="fsel" onchange="APP.renderMyTickets()">
+                <option value="">Todas</option>
+                <option value="cambio-equipo">Cambio equipo</option>
+                <option value="reparacion">Reparación</option>
+                <option value="falla-software">Software</option>
+                <option value="acceso-permisos">Accesos</option>
+                <option value="red-conectividad">Red</option>
+              </select>
+            </div>
+          </div>
+          <div id="my-tickets-list"></div>
+        </section>
+
+
+        <section class="view view-pane" id="view-contact" style="display:none">
+          <div class="ph" style="margin-bottom:24px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; width:100%;">
+              <div>
+                <h2 class="pt">Contacto IT</h2>
+                <p class="ps">Estamos aquí para ayudarte. Canales oficiales de soporte técnico.</p>
+              </div>
+              <button class="btn-primary" onclick="APP.nav('new-ticket')" style="padding: 8px 16px; font-size: 0.85rem; border-radius: 10px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16" style="margin-right:8px;"><path d="M12 5v14M5 12h14"/></svg>
+                Crear Ticket
+              </button>
+            </div>
+          </div>
+          <div class="contact-grid">
+            <div class="contact-section">
+              <div class="cs-header">
+                <h3 class="contact-title">Administradores de IT</h3>
+                <p class="contact-intro">Especialistas encargados de la infraestructura y soporte de segundo nivel.</p>
+              </div>
+
+              <div class="staff-cards-wrapper">
+                <div class="staff-card">
+                  <div class="staff-avatar" style="background:var(--primary);">GV</div>
+                  <div class="staff-details">
+                    <span class="staff-role">Director de Sistemas</span>
+                    <div class="staff-name">Gustavo Velandia</div>
+                    <span class="staff-email">gustavo.velandia@iceberg.com.co</span>
+                  </div>
+                  <button class="ci-copy" onclick="APP.copy('gustavo.velandia@iceberg.com.co', this)" title="Copiar correo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  </button>
+                </div>
+                <div class="staff-card">
+                  <div class="staff-avatar" style="background:#4F46E5;">ED</div>
+                  <div class="staff-details">
+                    <span class="staff-role">Ingeniero de Soporte</span>
+                    <div class="staff-name">Edgar Ducuara</div>
+                    <span class="staff-email">soporteti@iceberg.com.co</span>
+                  </div>
+                  <button class="ci-copy" onclick="APP.copy('soporteti@iceberg.com.co', this)" title="Copiar correo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  </button>
+                </div>
+                <div class="staff-card">
+                  <div class="staff-avatar" style="background:#7C3AED;">SA</div>
+                  <div class="staff-details">
+                    <span class="staff-role">Ingeniero de Soporte</span>
+                    <div class="staff-name">Stiven Arevalo</div>
+                    <span class="staff-email">soporte2@iceberg.com.co</span>
+                  </div>
+                  <button class="ci-copy" onclick="APP.copy('soporte2@iceberg.com.co', this)" title="Copiar correo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  </button>
+                </div>
+                <div class="staff-card">
+                  <div class="staff-avatar" style="background:#0e7490;">JD</div>
+                  <div class="staff-details">
+                    <span class="staff-role">Asistente de Soporte</span>
+                    <div class="staff-name">Juan Ducuara</div>
+                    <span class="staff-email">aprendiz@iceberg.com.co</span>
+                  </div>
+                  <button class="ci-copy" onclick="APP.copy('aprendiz.sistemas@iceberg.com.co', this)" title="Copiar correo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="support-info-grid">
+              <div class="support-module">
+                <h3 class="contact-title">Soporte Técnico Directo</h3>
+                <p class="contact-intro">Urgencias y contacto inmediato.</p>
+                <div class="ci-list">
+                  <div class="ci-item">
+                    <div class="ci-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    </div>
+                    <div class="ci-content">
+                      <span class="ci-label">Numero</span>
+                      <span class="ci-value large">3100000000</span>
+                    </div>
+                  </div>
+                  <div class="ci-item">
+                    <div class="ci-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    </div>
+                    <div class="ci-content">
+                      <span class="ci-label">Correo IT Central</span>
+                      <span class="ci-value">soporteti@iceberg.com.co</span>
+                    </div>
+                    <button class="ci-copy" onclick="APP.copy('soporteti@iceberg.com.co', this)" style="padding:4px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="support-module">
+                <h3 class="contact-title">Horarios de Atención</h3>
+                <p class="contact-intro">Disponibilidad del equipo técnico.</p>
+                <div class="ci-list">
+                  <div class="ci-item">
+                    <div class="ci-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                    <div class="ci-content">
+                      <span class="ci-label">Lunes a Viernes</span>
+                      <span class="ci-value large">07:30 AM — 05:30 PM</span>
+                    </div>
+                  </div>
+                  <div class="ci-item">
+                    <div class="ci-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                    <div class="ci-content">
+                      <span class="ci-label">Sábados</span>
+                      <span class="ci-value large">08:00 AM — 01:00 PM</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view view-pane" id="view-admin-dashboard" style="display:none">
+          <div class="ph">
+            <div>
+              <h2 class="pt" id="dash-title-admin">Panel principal</h2>
+              <p class="ps" id="admin-greeting">Buenas tardes, Sistema. Bienvenido al sistema de soporte.</p>
+            </div>
+            <div class="quick-actions-bar" style="display:flex; gap:12px; align-items:center;">
+              <button class="btn-primary" onclick="APP.nav('new-ticket')" style="display:flex; align-items:center; gap:8px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:16px;height:16px"><path d="M12 5v14M5 12h14"/></svg>
+                Nuevo Ticket
+              </button>
+              <button class="btn-ghost" onclick="APP.quickSupport()" style="display:flex; align-items:center; gap:8px; border:1px solid var(--border);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:16px;height:16px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Soporte Urgente
+              </button>
+            </div>
+            <div class="admin-badge-header">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+              Administrador IT
+            </div>
+          </div>
+          <div class="stats-row" id="admin-stats">
+            <div class="stat-card" style="border-left: 4px solid #4f46e5;">
+              <div class="stat-ico" style="background: var(--primary-light); color: var(--primary);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
+              <div class="stat-detail">
+                <div class="stat-val" id="ad-st-total">0</div>
+                <div class="stat-lbl">TICKETS TOTALES</div>
+              </div>
+            </div>
+            <div class="stat-card" style="border-left: 4px solid #f59e0b;">
+              <div class="stat-ico" style="background: #fff7ed; color: #f59e0b;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+              <div class="stat-detail">
+                <div class="stat-val" id="ad-st-avg">0m</div>
+                <div class="stat-lbl">PROMEDIO RESOLUCIÓN</div>
+              </div>
+            </div>
+            <div class="stat-card" style="border-left: 4px solid #4ade80;">
+              <div class="stat-ico" style="background: #f0fdf4; color: #16a34a;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20V10M18 20V4M6 20v-4"/></svg></div>
+              <div class="stat-detail">
+                <div class="stat-val" id="ad-st-week">0</div>
+                <div class="stat-lbl">TICKETS ESTA SEMANA</div>
+              </div>
+            </div>
+            <div class="stat-card" style="border-left: 4px solid #ef4444;">
+              <div class="stat-ico" style="background: #fef2f2; color: #ef4444;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+              <div class="stat-detail">
+                <div class="stat-val" id="ad-st-crit">0</div>
+                <div class="stat-lbl">URGENTES ACTIVOS</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dash-cols">
+            <div class="dash-card wide">
+              <div class="dc-head">
+                <h3>Tickets recientes — todos los usuarios</h3>
+                <button class="link-btn" onclick="APP.nav('admin-tickets')">Ver gestión completa →</button>
+              </div>
+              <div id="admin-dash-recent" class="table-wrapper">
+                <table class="refined-table" id="table-admin-recent">
+                  <thead>
+                    <tr>
+                      <th style="width:110px">ID</th>
+                      <th>ASUNTO / CATEGORÍA</th>
+                      <th>USUARIO / ÁREA</th>
+                      <th>ESTADO</th>
+                      <th>PRIORIDAD</th>
+                      <th>ASIGNADO</th>
+                      <th>ANTIGÜEDAD</th>
+                      <th style="width:100px">ACCIONES</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="dash-card">
+              <div class="dc-head">
+                <h3>Distribución por categoría</h3>
+              </div>
+              <div id="admin-cat-chart" class="p-6 chart-container-new"></div>
+            </div>
+          </div>
+          
+          <div class="dash-cols" style="margin-top:0">
+            <div class="dash-card">
+              <div class="dc-head">
+                <h3>Tickets críticos y de alta prioridad</h3>
+              </div>
+              <div id="admin-critical-list" class="p-4"></div>
+            </div>
+            <div class="dash-card">
+              <div class="dc-head">
+                <h3>Actividad reciente por usuario</h3>
+                <button class="link-btn" onclick="APP.nav('admin-users')">Ver todos →</button>
+              </div>
+              <div id="admin-user-activity" class="p-6"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view view-pane" id="view-admin-tickets" style="display:none">
+          <div class="ph">
+            <div>
+              <h2 class="pt">Gestión de tickets</h2>
+              <p class="ps">Control y seguimiento completo de todas las solicitudes.</p>
+            </div>
+          </div>
+          <div class="admin-toolbar">
+            <div class="admin-search-wrap">
+              <svg viewBox="0 0 24 20" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input type="text" id="admin-search" placeholder="ID, asunto o usuario..."
+                oninput="APP.renderAdminTickets()" />
+            </div>
+            <div class="f-group">
+              <label>Estado</label>
+              <select id="af-status" class="fsel" onchange="APP.renderAdminTickets()">
+                <option value="">Todos</option>
+                <option value="abierto">Abiertos</option>
+                <option value="en-progreso">En progreso</option>
+                <option value="resuelto">Resueltos</option>
+                <option value="cerrado">Cerrados</option>
+              </select>
+            </div>
+            <div class="f-group">
+              <label>Prioridad</label>
+              <select id="af-priority" class="fsel" onchange="APP.renderAdminTickets()">
+                <option value="">Todas</option>
+                <option value="critica">Crítica</option>
+                <option value="alta">Alta</option>
+                <option value="media">Media</option>
+                <option value="baja">Baja</option>
+              </select>
+            </div>
+            <div class="f-group">
+              <label>Categoría</label>
+              <select id="af-cat" class="fsel" onchange="APP.renderAdminTickets()">
+                <option value="">Todas</option>
+                <option value="cambio-equipo">Equipo</option>
+                <option value="reparacion">Reparación</option>
+                <option value="falla-software">Software</option>
+                <option value="acceso-permisos">Accesos</option>
+                <option value="red-conectividad">Red</option>
+                <option value="otro">Otro</option>
+              </select>
+            </div>
+            <div class="f-group">
+              <label>Área</label>
+              <select id="af-area" class="fsel" onchange="APP.renderAdminTickets()">
+                <option value="">Todas</option>
+                <option>Agencias</option>
+                <option>Almacén</option>
+                <option>Comercial</option>
+                <option>Compras</option>
+                <option>Contabilidad</option>
+                <option>Despachos</option>
+                <option>Gerencia</option>
+                <option>Gezpomotor</option>
+                <option>HSEQ</option>
+                <option>Iceberg</option>
+                <option>Jurídica</option>
+                <option>Mantenimiento</option>
+                <option>Servicio al Cliente</option>
+                <option>Sistemas</option>
+                <option>Talento Humano</option>
+                <option>Tráfico</option>
+                <option>Westlake</option>
+              </select>
+            </div>
+          </div>
+          <div id="admin-tickets-table" class="table-wrapper">
+            <table class="refined-table" id="table-admin-manage">
+              <thead>
+                <tr>
+                  <th>Tickets</th>
+                  <th>Asunto / Categoría</th>
+                  <th>Usuario</th>
+                  <th>Estado</th>
+                  <th>Prioridad</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="view view-pane" id="view-admin-users" style="display:none">
+          <div class="ph">
+            <div>
+              <h2 class="pt">Usuarios y actividad</h2>
+              <p class="ps">Colaboradores que han abierto tickets y su historial de solicitudes.</p>
+            </div>
+          </div>
+
+          <div class="dash-card" style="margin-bottom: 24px;">
+            <div class="dc-head">
+              <h3>Administradores Autorizados</h3>
+              <div style="display:flex; gap:8px;">
+                <input type="email" id="new-admin-email" placeholder="correo@iceberg.com.co"
+                  style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:0.85rem; width:220px;">
+                <button class="btn-primary" id="btn-add-admin" style="padding:8px 16px; font-size:0.85rem;">Agregar</button>
+              </div>
+            </div>
+            <div id="admin-emails-list" style="padding:16px;"></div>
+          </div>
+
+          <div id="admin-users-table"></div>
+        </section>
+
+        <section class="view view-pane" id="view-admin-audit" style="display:none">
+          <div class="ph">
+            <div>
+              <h2 class="pt">Registro e historiales</h2>
+              <p class="ps">Trazabilidad completa de acciones administrativas y cambios críticos.</p>
+            </div>
+            <button class="btn-secondary" onclick="APP.renderAuditLogs()">Actualizar</button>
+          </div>
+          <div id="audit-log-container" class="table-wrapper" style="max-height: 70vh;">
+             <table class="refined-table">
+               <thead><tr><th>Fecha</th><th>Actor</th><th>Acción</th><th>Referencia</th><th>Detalles</th></tr></thead>
+               <tbody id="audit-tbody"></tbody>
+             </table>
+          </div>
+        </section>
+
+        <section class="view view-pane" id="view-admin-backup" style="display:none">
+          <div class="ph">
+            <div>
+              <h2 class="pt">Copia de seguridad</h2>
+              <p class="ps">Copias de seguridad y descarga de datos.</p>
+            </div>
+            <div class="backup-action-btns">
+              <button class="btn-primary" onclick="APP._createManualBackup()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v14a2 2 0 0 1-2 2z" />
+                  <polyline points="17 21 17 13 7 13 7 21" />
+                  <polyline points="7 3 7 8 15 8" />
+                </svg>
+                Crear backup
+              </button>
+              <button class="btn-ghost" onclick="API.exportCSV()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="16" y1="13" x2="8" y2="13" />
+                  <line x1="16" y1="17" x2="8" y2="17" />
+                </svg>
+                Exportar CSV
+              </button>
+            </div>
+          </div>
+          <div class="dash-card">
+            <div class="dc-head"><h3>Historial</h3></div>
+            <div id="backup-list-container"></div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <div class="modal-bd" id="modal-ticket" style="display:none" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="modal-hd">
+        <div style="display:flex; flex-direction:column; gap:4px;">
+           <div id="m-id-pill" style="font-size:10px; font-weight:800; color:var(--t3); letter-spacing:1px; text-transform:uppercase;"></div>
+           <h3 class="modal-title" id="m-title" style="font-size:1.4rem; font-weight:800; color:var(--t1); letter-spacing:-0.02em;"></h3>
+        </div>
+        <button class="modal-x" onclick="APP.closeModal()" aria-label="Cerrar modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-meta-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:16px; margin-bottom:24px; padding:20px; background:var(--border-muted); border-radius:16px; border:1px solid var(--border);">
+           <div><label style="display:block; font-size:10px; font-weight:800; color:var(--t3); text-transform:uppercase; margin-bottom:6px;">Estado</label><div id="m-status-box"></div></div>
+           <div><label style="display:block; font-size:10px; font-weight:800; color:var(--t3); text-transform:uppercase; margin-bottom:6px;">Prioridad</label><div id="m-priority-box"></div></div>
+           <div><label style="display:block; font-size:10px; font-weight:800; color:var(--t3); text-transform:uppercase; margin-bottom:6px;">Asignado a</label><div id="m-assign-box" style="font-weight:700; color:var(--t1);"></div></div>
+           <div><label style="display:block; font-size:10px; font-weight:800; color:var(--t3); text-transform:uppercase; margin-bottom:6px;">Reportado por</label><div id="m-user-box" style="font-weight:600; color:var(--t2); font-size:0.85rem;"></div></div>
+        </div>
+
+        <div class="m-section" style="margin-bottom:32px;">
+          <h4 style="font-size:11px; font-weight:800; color:var(--t3); text-transform:uppercase; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Descripción del Ticket
+          </h4>
+          <p id="m-desc" style="white-space:pre-wrap; font-size:1rem; line-height:1.7; color:var(--t2); background:white; padding:20px; border-radius:12px; border:1px solid var(--border);"></p>
+        </div>
+
+        <div class="m-section">
+          <h4 style="font-size:11px; font-weight:800; color:var(--t3); text-transform:uppercase; margin-bottom:16px; display:flex; align-items:center; gap:8px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Actividad y Notas Técnicas
+          </h4>
+          <div id="m-notes-list" style="display:flex; flex-direction:column; gap:12px; margin-bottom:20px;"></div>
+        </div>
+
+        <div class="m-note-form" style="background:var(--border-muted); padding:16px; border-radius:16px; border:1px solid var(--border); display:flex; flex-direction:column; gap:12px;">
+          <textarea id="m-note-val" placeholder="Escribe una actualización o nota técnica aquí..." style="width:100%; border:1px solid var(--border); border-radius:10px; padding:12px; font-size:0.9rem; resize:none; min-height:80px; transition:0.2s;"></textarea>
+          <div style="display:flex; justify-content:flex-end;">
+            <button class="btn-primary" onclick="APP.addNote()" style="padding:10px 20px; font-size:0.85rem;">
+               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+               Agregar actualización
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-ft" id="m-footer" style="padding:24px 32px; background:var(--border-muted); border-top:1px solid var(--border); display:flex; gap:12px; justify-content:flex-end;"></div>
+    </div>
+  </div>
+
+  <div id="delete-confirm-modal" class="modal-bd" role="dialog" aria-modal="true" style="display:none; z-index:9000;">
+    <div class="modal confirm-modal-small">
+      <div class="confirm-icon-box">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5">
+          <polyline points="3 6 5 6 21 6" />
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+          <path d="M10 11v6" />
+          <path d="M14 11v6" />
+          <path d="M9 6V4h6v2" />
+        </svg>
+      </div>
+      <h3 class="confirm-title">¿Eliminar este ticket?</h3>
+      <p id="delete-confirm-msg" class="confirm-msg"></p>
+      <div class="confirm-actions">
+        <button id="delete-cancel-btn" class="btn-ghost full">No, cancelar</button>
+        <button id="delete-confirm-btn" class="btn-primary full"
+          style="background:#ef4444; box-shadow: 0 8px 20px rgba(239,68,68,0.3);">Sí, eliminar</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="ms-restricted-modal" class="modal-bd" role="dialog" aria-modal="true" style="display:none; z-index:9000;">
+    <div class="modal confirm-modal-small">
+      <div class="confirm-icon-box" style="background:#FEF3C7;">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+          <line x1="12" y1="9" x2="12" y2="13" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+      </div>
+      <h3 class="confirm-title">Acceso restringido</h3>
+      <div class="confirm-msg-scroll">
+        <p style="text-align:center;font-size:0.84rem;color:#475569;line-height:1.65;margin-bottom:8px;">El inicio de
+          sesión con <strong>Microsoft 365</strong> está reservado exclusivamente para los <strong>Administradores
+            IT</strong>.</p>
+        <p style="text-align:center;font-size:0.82rem;color:#64748B;margin-bottom:24px;">Por favor, usa tu
+          <strong>correo y contraseña</strong> corporativos para acceder al sistema.
+        </p>
+      </div>
+      <button id="ms-restricted-close" class="btn-primary full">Entendido — Usar correo y contraseña</button>
+    </div>
+  </div>
+
+
+  <div id="delete-confirm-modal" class="modal-bd" role="dialog" aria-modal="true" style="display:none; z-index:9000;">
+    <div class="modal confirm-modal-small">
+      <div class="confirm-icon-box">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5">
+          <polyline points="3 6 5 6 21 6" />
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+          <path d="M10 11v6" />
+          <path d="M14 11v6" />
+          <path d="M9 6V4h6v2" />
+        </svg>
+      </div>
+      <h3 class="confirm-title">¿Eliminar este ticket?</h3>
+      <p id="delete-confirm-msg" class="confirm-msg"></p>
+      <div class="confirm-actions">
+        <button id="delete-cancel-btn" class="btn-ghost full">No, cancelar</button>
+        <button id="delete-confirm-btn" class="btn-primary full"
+          style="background:#ef4444; box-shadow: 0 8px 20px rgba(239,68,68,0.3);">Sí, eliminar</button>
+      </div>
+    </div>
+  </div>
+
+
+
+  <div id="toast-container"></div>
+
+
+
+  <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
+  <script src="app.js?v=2.3"></script>
+</body>
+
+</html>
+

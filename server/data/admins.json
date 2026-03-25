@@ -1,0 +1,44 @@
+{
+  "users": [
+    {
+      "id": "aprendiz.sistemas",
+      "name": "Juan Ducuara",
+      "email": "aprendiz.sistemas@iceberg.com.co",
+      "password": "Pdr48159",
+      "role": "admin",
+      "area": "Sistemas",
+      "active": true,
+      "requiresNameVerification": true
+    },
+    {
+      "id": "gustavo.velandia",
+      "name": "Gustavo Velandia",
+      "email": "gustavo.velandia@iceberg.com.co",
+      "password": "RA7ha?h=KET5",
+      "role": "admin",
+      "area": "Sistemas",
+      "active": true,
+      "requiresNameVerification": true
+    },
+    {
+      "id": "soporteti",
+      "name": "Edgar Ducuara",
+      "email": "soporteti@iceberg.com.co",
+      "password": "~)ZExhpGQPW-",
+      "role": "admin",
+      "area": "Sistemas",
+      "active": true,
+      "requiresNameVerification": true
+    },
+    {
+      "id": "soporte2",
+      "name": "Stiven Arevalo",
+      "email": "soporte2@iceberg.com.co",
+      "password": "Sda48159",
+      "role": "admin",
+      "area": "Sistemas",
+      "active": true,
+      "requiresNameVerification": true
+    }
+  ]
+}

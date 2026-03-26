@@ -12,15 +12,19 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 const transporter = nodemailer.createTransport({
-  service: 'outlook',
+  host: 'smtp.office365.com',
+  port: 587,
+  secure: false, // STARTTLS
   auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+  connectionTimeout: 10000, // 10s de timeout inicial
+  greetingTimeout: 5000,
+  socketTimeout: 30000,
   pool: true, 
-  maxConnections: 5,
-  maxMessages: 100,
-  rateLimit: 10, // 10 emails por segundo para evitar bloqueos
+  maxConnections: 3,
+  maxMessages: 50,
   tls: { 
     rejectUnauthorized: false,
-    minVersion: 'TLSv1.2' 
+    ciphers: 'SSLv3'
   }
 });
 

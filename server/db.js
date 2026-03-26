@@ -1,15 +1,13 @@
 'use strict';
 const mongoose = require('mongoose');
 
-// Prioridad de conexión: MONGODB_URL (Railway interno) > DATABASE_URL (Railway público) > MONGO_URL (local/.env) > localhost
+// Prioridad: MONGODB_URL (Railway interno) > DATABASE_URL (Railway público) > MONGO_URL (local) > localhost
 const MONGO_URI =
-  process.env.MONGODB_URL||
+  process.env.MONGODB_URL ||
   process.env.DATABASE_URL ||
   process.env.MONGO_URL ||
-  process.env.MONGO_URI ||
   'mongodb://localhost:27017/iceberg_tickets';
 
-// Log seguro: oculta credenciales
 const safeHost = MONGO_URI.replace(/\/\/[^@]+@/, '//***@');
 console.log('[DB] Conectando a:', safeHost);
 
@@ -17,14 +15,16 @@ mongoose.connect(MONGO_URI, {
   serverSelectionTimeoutMS: 15000,
   socketTimeoutMS: 45000,
   connectTimeoutMS: 15000,
-  family: 4,           // Forzar IPv4
+  family: 4,
   retryWrites: true,
   w: 'majority'
 })
-  .then(() => console.log('✅ MONGO DB CONECTADO CON ÉXITO | Sistema de Tickets Activo'))
+  .then(() => console.log('✅ MongoDB conectado | Tickets/Notificaciones/Audit activos'))
   .catch(err => console.error('❌ ERROR CONEXIÓN MONGO:', err.message));
 
-// ======= ESQUEMAS =======
+// =====================================================================
+// ESQUEMAS — Solo Tickets, Notificaciones y Audit (Usuarios = Excel)
+// =====================================================================
 
 const ticketSchema = new mongoose.Schema({
   id:          { type: String, unique: true },
@@ -42,23 +42,12 @@ const ticketSchema = new mongoose.Schema({
   phone:       String,
   createdAt:   { type: Date, default: Date.now },
   updatedAt:   { type: Date, default: Date.now },
-  notes:       Array,
-  history:     Array
-});
-
-const userSchema = new mongoose.Schema({
-  id:                     { type: String, unique: true },
-  name:                   String,
-  email:                  { type: String, unique: true },
-  password:               String,
-  role:                   String,
-  area:                   String,
-  active:                 { type: Boolean, default: true },
-  requiresNameVerification: { type: Number, default: 0 }
+  notes:       { type: Array, default: [] },
+  history:     { type: Array, default: [] }
 });
 
 const notificationSchema = new mongoose.Schema({
-  id:        String,
+  id:        { type: String, unique: true },
   userId:    String,
   ticketId:  String,
   title:     String,
@@ -76,11 +65,9 @@ const auditSchema = new mongoose.Schema({
   timestamp: { type: Date, default: Date.now }
 });
 
-// Evitar error "Cannot overwrite model once compiled" en hot-reload
-const Ticket      = mongoose.models.Ticket      || mongoose.model('Ticket',      ticketSchema);
-const User        = mongoose.models.User        || mongoose.model('User',        userSchema);
-const Notification= mongoose.models.Notification|| mongoose.model('Notification',notificationSchema);
-const AuditLog    = mongoose.models.AuditLog    || mongoose.model('AuditLog',    auditSchema);
+const Ticket       = mongoose.models.Ticket       || mongoose.model('Ticket',       ticketSchema);
+const Notification = mongoose.models.Notification || mongoose.model('Notification', notificationSchema);
+const AuditLog     = mongoose.models.AuditLog     || mongoose.model('AuditLog',     auditSchema);
 
 module.exports = {
   // ======= TICKETS =======
@@ -91,8 +78,8 @@ module.exports = {
     return await Ticket.findOne({ id }).lean();
   },
   async create(t) {
-    const fresh = new Ticket({ ...t, id: t.id || `T-${Date.now()}` });
-    return await fresh.save();
+    const ticket = new Ticket({ ...t, id: t.id || `T-${Date.now()}` });
+    return await ticket.save();
   },
   async update(id, patch) {
     return await Ticket.findOneAndUpdate(
@@ -108,24 +95,7 @@ module.exports = {
     await Ticket.deleteMany({});
   },
 
-  // ======= USERS =======
-  async getUserById(id) {
-    return await User.findOne({ id }).lean();
-  },
-  async toggleUser(id) {
-    const u = await User.findOne({ id }).lean();
-    if (!u) return null;
-    const newState = !u.active;
-    await User.updateOne({ id }, { active: newState });
-    return { ...u, active: newState };
-  },
-  async deleteUser(id) {
-    const u = await User.findOne({ id }).lean();
-    await User.deleteOne({ id });
-    return u;
-  },
-
-  // ======= NOTIFICATIONS =======
+  // ======= NOTIFICACIONES =======
   async getNotifications(limit = 50) {
     return await Notification.find({}).sort({ timestamp: -1 }).limit(limit).lean();
   },
@@ -149,8 +119,5 @@ module.exports = {
     return await AuditLog.find({}).sort({ timestamp: -1 }).limit(limit).lean();
   },
 
-  isBackup() { return false; },
-
-  // Exportar modelos para uso en users.js
-  models: { User, Ticket, Notification, AuditLog }
+  isBackup() { return false; }
 };

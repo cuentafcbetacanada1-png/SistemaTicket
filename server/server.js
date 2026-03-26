@@ -350,9 +350,12 @@ app.delete('/admin/emails', async (req, res) => {
 app.put('/admin/users/toggle/:id', async (req, res) => {
   try {
     const actor = req.headers['iceberg-user'] || 'Desconocido';
-    const result = await db.toggleUser(req.params.id);
-    if (!result) return res.status(404).json({error:'No encontrado'});
-    await db.addAuditLog(actor, 'TOGGLE_USUARIO', result.email, `Estado cambiado a: ${result.active ? 'Activo' : 'Inactivo'}`);
+    const result = await Users.update(req.params.id, {});
+    if (!result) return res.status(404).json({ error: 'No encontrado' });
+    // Toggle activo en memoria
+    result.active = !result.active;
+    await Users.update(req.params.id, { active: result.active });
+    await db.addAuditLog(actor, 'TOGGLE_USUARIO', result.email || req.params.id, `Estado cambiado a: ${result.active ? 'Activo' : 'Inactivo'}`);
     res.json({ success: true });
   } catch (e) { res.status(500).send(); }
 });
@@ -360,8 +363,8 @@ app.put('/admin/users/toggle/:id', async (req, res) => {
 app.delete('/admin/users/:id', async (req, res) => {
   try {
     const actor = req.headers['iceberg-user'] || 'Desconocido';
-    const u = await db.deleteUser(req.params.id);
-    if (u) await db.addAuditLog(actor, 'ELIMINAR_USUARIO', u.email, 'Usuario borrado de la base de datos');
+    const u = await Users.getByEmail(req.params.id) || await Users.update(req.params.id, { active: false });
+    if (u) await db.addAuditLog(actor, 'DESACTIVAR_USUARIO', u.email || req.params.id, 'Usuario desactivado');
     res.json({ success: true });
   } catch (e) { res.status(500).send(); }
 });

@@ -4,8 +4,7 @@
   "private": true,
   "main": "server/server.js",
   "scripts": {
-    "start": "node server/server.js",
-    "init-db": "node server/init-db.js"
+    "start": "node server/server.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

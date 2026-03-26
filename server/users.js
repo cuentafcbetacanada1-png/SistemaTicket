@@ -1,32 +1,67 @@
 'use strict';
-const dbModule = require('./db'); // Importar el módulo completo para acceder a los modelos
+const xlsx = require('xlsx');
 const path = require('path');
 const fs   = require('fs');
 
-// Usar el modelo User YA registrado en db.js (evita MissingSchemaError)
-const User = dbModule.models.User;
+// =====================================================================
+// USUARIOS: Se leen ÚNICAMENTE del Excel en memoria al arrancar.
+// MongoDB NO se usa para usuarios.
+// =====================================================================
 
-// Cargar lista maestra de correos corporativos
-const CORREOS_PATH = path.join(__dirname, 'data', 'correos_iceberg.json');
-let CORREOS_LIST = [];
-try {
-  const data = JSON.parse(fs.readFileSync(CORREOS_PATH, 'utf8'));
-  CORREOS_LIST = (data.emails || []).map(e => e.toLowerCase().trim());
-  console.log(`[USERS] ${CORREOS_LIST.length} correos corporativos cargados.`);
-} catch (e) {
-  console.warn('[USERS] No se pudo cargar correos_iceberg.json:', e.message);
-}
-
-// Path para persistir administradores autorizados
+const EXCEL_PATH = path.join(__dirname, 'data', 'CorreosIceberg 2026.xlsx');
 const ADMIN_EMAILS_PATH = path.join(__dirname, 'data', 'authorized_admins.json');
-let IT_MASTERS = [
-  'aprendiz.sistemas@iceberg.com.co',
-  'soporte2@iceberg.com.co',
-  'soporteti@iceberg.com.co',
-  'gustavo.velandia@iceberg.com.co',
-  'sistema.tickets@iceberg.com.co'
+
+// Admins con contraseña (4 administradores del equipo IT)
+const ADMIN_SEEDS = [
+  { id: 'aprendiz.sistemas',  name: 'Juan Ducuara',     email: 'aprendiz.sistemas@iceberg.com.co', role: 'admin', empresa: 'Transportes Iceberg', password: 'Pdr48159',      active: true },
+  { id: 'soporte2',           name: 'Stiven Arevalo',   email: 'soporte2@iceberg.com.co',           role: 'admin', empresa: 'Transportes Iceberg', password: 'Sda48159',      active: true },
+  { id: 'soporteti',          name: 'Edgar Ducuara',    email: 'soporteti@iceberg.com.co',          role: 'admin', empresa: 'Transportes Iceberg', password: '~)ZExhpGQPW-', active: true },
+  { id: 'gustavo.velandia',   name: 'Gustavo Velandia', email: 'gustavo.velandia@iceberg.com.co',   role: 'admin', empresa: 'Transportes Iceberg', password: 'RA7ha?h=KET5', active: true },
 ];
 
+// ---- Cargar y parsear el Excel ----
+let ALL_USERS = []; // Array de {id, name, email, role, empresa, active, password}
+
+function loadExcel() {
+  try {
+    const workbook = xlsx.readFile(EXCEL_PATH);
+    const sheet    = workbook.Sheets[workbook.SheetNames[0]];
+    const rows     = xlsx.utils.sheet_to_json(sheet);
+
+    const adminEmails = new Set(ADMIN_SEEDS.map(a => a.email.toLowerCase()));
+
+    ALL_USERS = rows
+      .map(row => {
+        const email   = (row['Email']       || row['email']       || '').toString().replace(/[\r\n]/g, '').toLowerCase().trim();
+        const nombre  = (row['Observacion'] || row['Observación'] || row['Nombre'] || row['nombre'] || '').toString().replace(/[\r\n]/g, '').trim();
+        const empresa = (row['Empresa']     || row['empresa']     || 'General').toString().replace(/[\r\n]/g, '').trim();
+        const estado  = (row['Estado']      || row['estado']      || 'ACTIVO').toString().toUpperCase().trim();
+        if (!email || !email.includes('@')) return null;
+        return {
+          id:      email.split('@')[0],
+          name:    nombre || email.split('@')[0],
+          email,
+          role:    'user',
+          empresa,
+          active:  estado === 'ACTIVO',
+          password: null
+        };
+      })
+      .filter(u => u && !adminEmails.has(u.email)); // excluir admins (ya están en ADMIN_SEEDS)
+
+    // Agregar admins al principio
+    ALL_USERS = [...ADMIN_SEEDS, ...ALL_USERS];
+    console.log(`[USERS] ✅ ${ALL_USERS.length} usuarios cargados desde Excel (${ADMIN_SEEDS.length} admins + ${ALL_USERS.length - ADMIN_SEEDS.length} corporativos).`);
+  } catch (e) {
+    console.warn('[USERS] ⚠️  No se pudo leer el Excel, usando solo admins hardcoded:', e.message);
+    ALL_USERS = [...ADMIN_SEEDS];
+  }
+}
+
+loadExcel(); // Ejecutar al arrancar el servidor
+
+// ---- Lista de administradores autorizados (para login Microsoft) ----
+let IT_MASTERS = ADMIN_SEEDS.map(a => a.email);
 try {
   if (fs.existsSync(ADMIN_EMAILS_PATH)) {
     const data = JSON.parse(fs.readFileSync(ADMIN_EMAILS_PATH, 'utf8'));
@@ -34,66 +69,64 @@ try {
   }
 } catch (e) { }
 
-const ADMIN_SEEDS = [
-  { id: 'aprendiz.sistemas',  name: 'Juan Ducuara',     email: 'aprendiz.sistemas@iceberg.com.co', role: 'admin', area: 'Sistemas', password: 'Pdr48159' },
-  { id: 'soporte2',           name: 'Stiven Arevalo',   email: 'soporte2@iceberg.com.co',           role: 'admin', area: 'Sistemas', password: 'Sda48159' },
-  { id: 'soporteti',          name: 'Edgar Ducuara',    email: 'soporteti@iceberg.com.co',          role: 'admin', area: 'Sistemas', password: '~)ZExhpGQPW-' },
-  { id: 'gustavo.velandia',   name: 'Gustavo Velandia', email: 'gustavo.velandia@iceberg.com.co',   role: 'admin', area: 'Sistemas', password: 'RA7ha?h=KET5' },
-  { id: 'sistema.tickets',    name: 'Sistema Ti',       email: 'sistema.tickets@iceberg.com.co',    role: 'admin', area: 'Sistemas', password: 'Pdr48159' }
-];
-
+// =====================================================================
+// API de Usuarios (todo en memoria, sin MongoDB)
+// =====================================================================
 class Users {
+
+  // Inicialización (no necesita hacer nada con la BD para usuarios)
   static async initialize() {
-    for (const admin of ADMIN_SEEDS) {
-      try { await Users.create(admin); } catch (e) { }
-    }
-    console.log('[USERS] ✅ Administradores sincronizados en MongoDB.');
+    console.log('[USERS] ✅ Sistema de usuarios listo (modo Excel).');
   }
 
   static async getByEmail(email) {
     if (!email) return null;
-    return await User.findOne({ email: email.toLowerCase().trim() }).lean();
+    const low = email.toLowerCase().trim();
+    return ALL_USERS.find(u => u.email === low) || null;
   }
 
-  static async create({ id, name, email, password, role, area }) {
-    if (!email) return null;
-    const emailLow = email.toLowerCase().trim();
-    const userId   = id || emailLow.split('@')[0];
-    const finalName = name || emailLow.split('@')[0];
-
-    return await User.findOneAndUpdate(
-      { email: emailLow },
-      { $setOnInsert: { id: userId, requiresNameVerification: 1 }, $set: { name: finalName, email: emailLow, password: password || null, role: role || 'user', area: area || 'General', active: true } },
-      { upsert: true, returnDocument: 'after' }
-    ).lean();
+  static async create({ email, name, role }) {
+    // Los usuarios ya están en el Excel — solo devolvemos el existente o uno temporal
+    const existing = await Users.getByEmail(email);
+    if (existing) return existing;
+    // Usuario temporal en memoria (no se persiste, solo para la sesión)
+    return { id: email.split('@')[0], name: name || email.split('@')[0], email: email.toLowerCase(), role: role || 'user', empresa: 'General', active: true };
   }
 
   static async getAll() {
-    return await User.find({}, 'id name email role area active').lean();
+    return ALL_USERS.map(({ password: _pw, ...u }) => u); // Ocultar contraseñas
   }
 
   static async count() {
-    return await User.countDocuments();
+    return ALL_USERS.length;
   }
 
   static async update(id, data) {
-    return await User.findOneAndUpdate({ id }, data, { returnDocument: 'after' }).lean();
+    const idx = ALL_USERS.findIndex(u => u.id === id || u.email === id);
+    if (idx >= 0) {
+      ALL_USERS[idx] = { ...ALL_USERS[idx], ...data };
+      return ALL_USERS[idx];
+    }
+    return null;
   }
 
   static async deactivate(id) {
-    await User.updateOne({ id }, { active: false });
+    const u = ALL_USERS.find(u => u.id === id || u.email === id);
+    if (u) u.active = false;
   }
 
   static isCorporate(email) {
     if (!email) return false;
     const low = email.toLowerCase().trim();
-    if (CORREOS_LIST.includes(low)) return true;
+    // Buscar en el Excel primero
+    if (ALL_USERS.some(u => u.email === low)) return true;
+    // Fallback por dominio
     return (
-      low.includes('iceberg') ||
-      low.includes('gezpo') ||
+      low.endsWith('@iceberg.com.co') ||
       low.endsWith('@gezpomotor.com') ||
       low.endsWith('@westlakecolombia.com') ||
-      low.endsWith('@fastrack.com.co')
+      low.endsWith('@fastrack.com.co') ||
+      low.endsWith('@gezport.com')
     );
   }
 

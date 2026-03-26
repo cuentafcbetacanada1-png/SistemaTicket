@@ -105,9 +105,8 @@ app.use(express.static(path.join(__dirname, '..')));
 app.get('/health', (req, res) => res.json({ 
   status: 'ok', 
   stable: true, 
-  v: '7.6 (FINAL-STABLE)',
-  dbMode: 'Modo Producción (SQL Server)',
-  current_ip_config: process.env.DB_SERVER || 'MANTENIMIENTO',
+  v: '8.0 (MongoDB)',
+  dbMode: 'MongoDB (Railway)',
   timestamp: new Date().toISOString()
 }));
 
@@ -205,7 +204,6 @@ app.post('/tickets', async (req, res) => {
 
     await createNotification(`Nuevo Ticket: ${t.id}`, `${t.createdBy.name} ha reportado: ${t.title}`, t.id, 'all', 'info');
 
-    const sender = process.env.EMAIL_USER || 'sistemas.tickets@iceberg.com.co';
     const adminMail = {
       from: process.env.EMAIL_USER,
       to: ALL_ADMINS,

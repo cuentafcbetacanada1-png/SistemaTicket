@@ -1,11 +1,10 @@
 'use strict';
-const db   = require('./db'); // Ahora es un objeto con modelos Mongoose
+const dbModule = require('./db'); // Importar el módulo completo para acceder a los modelos
 const path = require('path');
 const fs   = require('fs');
-const mongoose = require('mongoose');
 
-// Definición de Esquemas Locales para asegurar el modelo
-const User = mongoose.model('User');
+// Usar el modelo User YA registrado en db.js (evita MissingSchemaError)
+const User = dbModule.models.User;
 
 // Cargar lista maestra de correos corporativos
 const CORREOS_PATH = path.join(__dirname, 'data', 'correos_iceberg.json');
@@ -36,11 +35,11 @@ try {
 } catch (e) { }
 
 const ADMIN_SEEDS = [
-  { id: 'aprendiz.sistemas', name: 'Juan Ducuara', email: 'aprendiz.sistemas@iceberg.com.co', role: 'admin', area: 'Sistemas', password: 'Pdr48159' },
-  { id: 'soporte2', name: 'Stiven Arevalo', email: 'soporte2@iceberg.com.co', role: 'admin', area: 'Sistemas', password: 'Sda48159' },
-  { id: 'soporteti', name: 'Edgar Ducuara', email: 'soporteti@iceberg.com.co', role: 'admin', area: 'Sistemas', password: '~)ZExhpGQPW-' },
-  { id: 'gustavo.velandia', name: 'Gustavo Velandia', email: 'gustavo.velandia@iceberg.com.co', role: 'admin', area: 'Sistemas', password: 'RA7ha?h=KET5' },
-  { id: 'sistema.tickets', name: 'Sistema Ti', email: 'sistema.tickets@iceberg.com.co', role: 'admin', area: 'Sistemas', password: 'Pdr48159' }
+  { id: 'aprendiz.sistemas',  name: 'Juan Ducuara',     email: 'aprendiz.sistemas@iceberg.com.co', role: 'admin', area: 'Sistemas', password: 'Pdr48159' },
+  { id: 'soporte2',           name: 'Stiven Arevalo',   email: 'soporte2@iceberg.com.co',           role: 'admin', area: 'Sistemas', password: 'Sda48159' },
+  { id: 'soporteti',          name: 'Edgar Ducuara',    email: 'soporteti@iceberg.com.co',          role: 'admin', area: 'Sistemas', password: '~)ZExhpGQPW-' },
+  { id: 'gustavo.velandia',   name: 'Gustavo Velandia', email: 'gustavo.velandia@iceberg.com.co',   role: 'admin', area: 'Sistemas', password: 'RA7ha?h=KET5' },
+  { id: 'sistema.tickets',    name: 'Sistema Ti',       email: 'sistema.tickets@iceberg.com.co',    role: 'admin', area: 'Sistemas', password: 'Pdr48159' }
 ];
 
 class Users {
@@ -53,22 +52,20 @@ class Users {
 
   static async getByEmail(email) {
     if (!email) return null;
-    const emailLow = email.toLowerCase().trim();
-    return await User.findOne({ email: emailLow }).lean();
+    return await User.findOne({ email: email.toLowerCase().trim() }).lean();
   }
 
   static async create({ id, name, email, password, role, area }) {
     if (!email) return null;
     const emailLow = email.toLowerCase().trim();
-    const userId = id || emailLow.split('@')[0];
-    const finalName = name || (emailLow.split('@')[0]);
-    
-    const u = await User.findOneAndUpdate(
-      { id: userId }, 
-      { id: userId, name: finalName, email: emailLow, password: password || null, role: role || 'user', area: area || 'General', active: true },
+    const userId   = id || emailLow.split('@')[0];
+    const finalName = name || emailLow.split('@')[0];
+
+    return await User.findOneAndUpdate(
+      { email: emailLow },
+      { $setOnInsert: { id: userId, requiresNameVerification: 1 }, $set: { name: finalName, email: emailLow, password: password || null, role: role || 'user', area: area || 'General', active: true } },
       { upsert: true, returnDocument: 'after' }
     ).lean();
-    return u;
   }
 
   static async getAll() {
@@ -91,7 +88,13 @@ class Users {
     if (!email) return false;
     const low = email.toLowerCase().trim();
     if (CORREOS_LIST.includes(low)) return true;
-    return low.includes('iceberg') || low.includes('gezpo') || low.includes('@gezpomotor.com') || low.includes('@westlakecolombia.com') || low.includes('@fastrack.com.co');
+    return (
+      low.includes('iceberg') ||
+      low.includes('gezpo') ||
+      low.endsWith('@gezpomotor.com') ||
+      low.endsWith('@westlakecolombia.com') ||
+      low.endsWith('@fastrack.com.co')
+    );
   }
 
   static isMasterAdmin(email) {

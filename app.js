@@ -10,7 +10,7 @@ const AZURE_CONFIG = {
       if (port === '5500') return 'http://localhost:5500/tickets/index.html';
       return 'http://localhost:3000';
     }
-    return 'https://iceberg-tickets.up.railway.app';
+    return 'https://sistema-tickets.up.railway.app';
   },
 };
 
@@ -77,7 +77,7 @@ const Store = {
 
 // Detector de Servidor: Si el archivo se abre localmente (file://), intentamos conectar al dominio de Railway
 const IS_LOCAL_FILE = window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const PROD_URL = 'https://iceberg-tickets.up.railway.app';
+const PROD_URL = 'https://sistema-tickets.up.railway.app';
 // Inteligencia de URL: Si estamos en file:// buscamos primero un servidor local en el puerto 3000.
 let API_URL_VAR = (window.location.protocol === 'http:' || window.location.protocol === 'https:') ? window.location.origin : 'http://localhost:3000';
 // Fallback a producción solo si no es local file o si falla (opcional, por ahora forzamos local)

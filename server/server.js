@@ -167,7 +167,7 @@ const renderEmail = (t, title, subtitle, badgeText, badgeColor = '#335495', cont
           <td style="padding: 40px;">
             <div style="font-size: 15px; color: #334155; line-height: 1.6; margin-bottom: 30px;">${contentHtml}</div>
             <div style="margin-top: 40px; padding-top: 30px; border-top: 1px solid #f1f5f9; text-align: center;">
-              <a href="https://iceberg-tickets.up.railway.app?ticketId=${t.id}" style="background-color: #335495; color: #ffffff; padding: 15px 35px; border-radius: 6px; font-weight: bold; text-decoration: none; display: inline-block; font-size: 14px;">Ir a Gestión de Soporte →</a>
+              <a href="https://sistema-tickets.up.railway.app?ticketId=${t.id}" style="background-color: #335495; color: #ffffff; padding: 15px 35px; border-radius: 6px; font-weight: bold; text-decoration: none; display: inline-block; font-size: 14px;">Ir a Gestión de Soporte →</a>
             </div>
           </td>
         </tr>

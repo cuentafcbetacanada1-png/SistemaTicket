@@ -68,24 +68,41 @@ const Store = {
   clearSession() { localStorage.removeItem('ice_session'); },
   getTickets() { return this.getLocalTickets(); },
   saveTickets(t) { this.saveLocal(t); },
+  getLocalNotifications() {
+    try { return JSON.parse(localStorage.getItem('ice_local_notifications') || '[]'); }
+    catch (e) { return []; }
+  },
+  saveLocalNotifications(n) { localStorage.setItem('ice_local_notifications', JSON.stringify(n)); }
 };
 
 // Detector de Servidor: Si el archivo se abre localmente (file://), intentamos conectar al dominio de Railway
 const IS_LOCAL_FILE = window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const PROD_URL = 'https://iceberg-tickets.up.railway.app';
-const API_URL = IS_LOCAL_FILE ? PROD_URL : window.location.origin;
+// Inteligencia de URL: Si estamos en file:// buscamos primero un servidor local en el puerto 3000.
+let API_URL_VAR = (window.location.protocol === 'http:' || window.location.protocol === 'https:') ? window.location.origin : 'http://localhost:3000';
+// Fallback a producción solo si no es local file o si falla (opcional, por ahora forzamos local)
+let API_URL = localStorage.getItem('ice_api_override') || API_URL_VAR;
+if (API_URL.endsWith('/')) API_URL = API_URL.slice(0, -1);
+console.log(`[ICEBERG] API Endpoint: ${API_URL}`);
 
 const API = {
   _up: null,   
 
   async _fetch(path, opts = {}) {
+    const cleanPath = path.startsWith('/') ? path : '/' + path;
+    const url = API_URL + cleanPath;
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 20000);
     try {
-      const headers = { ...(opts.headers || {}), 'iceberg-user': (Store.getSession()?.email || 'Desconocido') };
-      const r = await fetch(`${API_URL}${path}`, { ...opts, headers, signal: ctrl.signal });
+      const headers = { 
+        'Content-Type': 'application/json',
+        ...(opts.headers || {}), 
+        'iceberg-user': (Store.getSession()?.email || 'Desconocido') 
+      };
+      
+      const r = await fetch(url, { ...opts, headers, signal: ctrl.signal });
       clearTimeout(timer);
-      this._up = r.ok || r.status < 500;
+      this._up = r.ok || (r.status < 500 && r.status !== 503);
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       return r;
     } catch (err) {
@@ -95,15 +112,18 @@ const API = {
     }
   },
 
+
   async checkHealth() {
     try {
       const r = await this._fetch('/health');
       const d = await r.json();
       this._up = true;
-      this._dbMode = d.dbMode;
+      this._dbConnected = true; 
+      this._dbMode = d.dbMode || 'local';
       return d;
     } catch {
       this._up = false;
+      this._dbConnected = false;
       return null;
     }
   },
@@ -196,7 +216,6 @@ const API = {
   serverLabel() {
     if (this._up === null) return { text: 'Verificando…', cls: 'server-unknown' };
     if (this._up === true) {
-        if (this._dbMode === 'backup') return { text: '● Modo Resiliente (Nube)', cls: 'server-online', style: 'color: #3b82f6' };
         return { text: '● Servidor corporativo OK', cls: 'server-online' };
     }
     return { text: '● Modo offline (localStorage)', cls: 'server-offline' };
@@ -246,15 +265,46 @@ const APP = {
 
     if (!this._syncInterval) {
       this._syncInterval = setInterval(async () => {
-        if (this.user && API._up !== false) {
-          this.tickets = await API.getTickets();
-          this.updateMyCounts();
-          this.renderView(this.currentView);
-          this._updateServerBadge();
-        } else {
-          this._updateServerBadge();
+        if (this.user) {
+          const wasUp = API._up !== false;
+          // Si el servidor o la BD están caídos, intentamos reconectar
+          if (API._up === false || API._dbConnected === false) await API.checkHealth();
+          
+          const isUp = API._up !== false;
+          
+          if (!isUp && wasUp && !this._serverDownNotified) {
+             this._serverDownNotified = true;
+             this.addLocalNotification({
+                id: 'sys-down',
+                title: 'Servidor Desconectado',
+                message: 'La conexión con el servidor se ha perdido. Trabajando en modo local.',
+                type: 'warning',
+                timestamp: new Date().toISOString()
+             });
+          } else if (isUp && !wasUp) {
+             this._serverDownNotified = false;
+             this.addLocalNotification({
+                id: 'sys-up',
+                title: 'Conexión Recuperada',
+                message: 'El servidor está online nuevamente. Sincronizando datos...',
+                type: 'info',
+                timestamp: new Date().toISOString()
+             });
+          }
+
+          if (isUp && API._dbConnected !== false) {
+            await this.syncOfflineTickets();
+            this.tickets = await API.getTickets();
+            this.updateMyCounts();
+            if (this.currentView === 'dashboard' || this.currentView === 'admin-tickets' || this.currentView === 'my-tickets') {
+              this.renderView(this.currentView);
+            }
+            this._updateServerBadge();
+          } else {
+            this._updateServerBadge();
+          }
         }
-      }, 30000);
+      }, 12000);
     }
 
     this.bindLogin();
@@ -340,6 +390,7 @@ const APP = {
     const s = API.serverLabel();
     badge.textContent = s.text;
     badge.className = `server-badge ${s.cls}`;
+    if (s.style) badge.style.cssText = s.style; else badge.style.cssText = '';
   },
 
   async loginWithMicrosoft() {
@@ -390,7 +441,7 @@ const APP = {
       const email = (profile.mail || profile.userPrincipalName || '').toLowerCase();
       const name = profile.displayName || resp.account.name || email.split('@')[0];
 
-      const adminEmailsFetch = await fetch(`${API_URL}/admin/emails`).then(r => r.json()).catch(() => []);
+      const adminEmailsFetch = await API._fetch('/admin/emails').then(r => r.json()).catch(() => []);
       const adminEmails = Array.isArray(adminEmailsFetch) ? adminEmailsFetch : [];
       const isAdminEmail = adminEmails.some(ae => ae.toLowerCase() === email);
 
@@ -403,7 +454,7 @@ const APP = {
         return;
       }
 
-      const syncResp = await fetch(`${API_URL}/auth/sync-microsoft`, {
+      const syncResp = await API._fetch('/auth/sync-microsoft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -474,7 +525,7 @@ const APP = {
         btn.disabled = true;
 
         try {
-          const r = await fetch(`${API_URL}/auth/login-email`, {
+          const r = await API._fetch('/auth/login-email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email }),
@@ -533,7 +584,7 @@ const APP = {
       btn.disabled = true;
 
       try {
-        const r = await fetch(`${API_URL}/auth/login`, {
+        const r = await API._fetch('/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password: pass }),
@@ -598,7 +649,7 @@ const APP = {
 
       const { email, pass } = this._pendingCreds || {};
       try {
-        const r = await fetch(`${API_URL}/auth/login`, {
+        const r = await API._fetch('/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password: pass, name }),
@@ -689,6 +740,8 @@ const APP = {
 
     this.nav(this.user.role === 'admin' ? 'admin-dashboard' : 'dashboard');
     this.updateMyCounts();
+    this.bindNotifications();
+    this.fetchNotifications();
     this._checkPendingTicket();
   },
 
@@ -814,7 +867,18 @@ const APP = {
 
   updateMyCounts() {
     const tlist = this.tickets || [];
-    const mine = tlist.filter(t => (t.createdBy?.id === this.user?.id || t.createdBy?.email === this.user?.email) && t.status !== 'cerrado').length;
+    const uid = this.user?.id;
+    const umail = this.user?.email?.toLowerCase();
+    
+    // Sincronizado con renderMyTickets para evitar discrepancias
+    const mine = tlist.filter(t => {
+      if (!t.createdBy || !this.user) return false;
+      if (t.status === 'cerrado') return false;
+      const t_uid = t.createdBy.id;
+      const t_umail = (t.createdBy.email || t.createdBy.username || '').toLowerCase();
+      return (t_uid === uid) || (t_umail && umail && (t_umail === umail || umail.includes(t_umail) || t_umail.includes(umail)));
+    }).length;
+
     const el = document.getElementById('my-cnt');
     if (el) { el.textContent = mine; el.style.display = mine > 0 ? 'inline' : 'none'; }
 
@@ -854,35 +918,41 @@ const APP = {
 
     const recent = mine.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
     const rl = document.getElementById('dash-recent');
-    rl.innerHTML = recent.length
-      ? `<div class="mini-tickets-grid">${recent.map(t => this.ticketMiniCard(t)).join('')}</div>`
-      : this.emptyState('No tienes tickets aún.', 'Crea tu primer ticket para empezar.', true);
-
-    const pie = document.getElementById('dash-pie');
-    const statusData = [
-      { lbl: 'Abiertos', val: open, color: 'var(--warning)' },
-      { lbl: 'En progreso', val: prog, color: 'var(--accent)' },
-      { lbl: 'Resueltos', val: res, color: 'var(--success)' },
-    ].filter(d => d.val > 0);
-
-    if (mine.length === 0) {
-      pie.innerHTML = this.emptyState('Sin tickets.', 'Crea tu primera solicitud.', true);
-    } else {
-      pie.innerHTML = `<div class="pie-items">
-        ${statusData.map(d => `
-          <div class="pie-item">
-            <span class="pie-lbl">${d.lbl}</span>
-            <div class="pie-bar-wrap">
-              <div class="pie-bar" style="width:${Math.round(d.val / mine.length * 100)}%; background:${d.color}"></div>
-            </div>
-            <span class="pie-val">${d.val}</span>
-          </div>`).join('')}
-      </div>`;
+    if (rl) {
+      rl.innerHTML = recent.length
+        ? `<div class="mini-tickets-grid">${recent.map(t => this.ticketMiniCard(t)).join('')}</div>`
+        : this.emptyState('No tienes tickets aún.', 'Crea tu primer ticket para empezar.', true);
     }
 
-    rl.querySelectorAll('.ticket-mini-card').forEach(el => {
-      el.addEventListener('click', () => this.openModal(el.dataset.id));
-    });
+    const pie = document.getElementById('dash-pie');
+    if (pie) {
+      const statusData = [
+        { lbl: 'Abiertos', val: open, color: 'var(--warning)' },
+        { lbl: 'En progreso', val: prog, color: 'var(--accent)' },
+        { lbl: 'Resueltos', val: res, color: 'var(--success)' },
+      ].filter(d => d.val > 0);
+
+      if (mine.length === 0) {
+        pie.innerHTML = this.emptyState('Sin tickets.', 'Crea tu primera solicitud.', true);
+      } else {
+        pie.innerHTML = `<div class="pie-items">
+          ${statusData.map(d => `
+            <div class="pie-item">
+              <span class="pie-lbl">${d.lbl}</span>
+              <div class="pie-bar-wrap">
+                <div class="pie-bar" style="width:${Math.round(d.val / mine.length * 100)}%; background:${d.color}"></div>
+              </div>
+              <span class="pie-val">${d.val}</span>
+            </div>`).join('')}
+        </div>`;
+      }
+    }
+
+    if (rl) {
+      rl.querySelectorAll('.ticket-mini-card').forEach(el => {
+        el.addEventListener('click', () => this.openModal(el.dataset.id));
+      });
+    }
   },
 
   resetTicketForm() {
@@ -972,9 +1042,11 @@ const APP = {
     if (hasError) return;
 
     const btn = document.getElementById('btn-submit-ticket');
-    document.getElementById('submit-txt').style.display = 'none';
-    document.getElementById('submit-spinner').style.display = 'block';
-    btn.disabled = true;
+    const bTxt = document.getElementById('submit-txt');
+    const bSpin = document.getElementById('submit-spinner');
+    if (bTxt) bTxt.style.display = 'none';
+    if (bSpin) bSpin.style.display = 'block';
+    if (btn) btn.disabled = true;
 
     const newId = this.generateId();
     const now = new Date().toISOString();
@@ -1010,11 +1082,23 @@ const APP = {
       this.showToast(IS_LOCAL_FILE 
         ? 'Error de Red: No se pudo conectar al servidor de Railway desde este archivo local.' 
         : 'Error de Red: El servidor no responde o tu conexión es inestable.', 'error');
+      
+      // Notificación Local
+      this.addLocalNotification({
+        id: `local-${Date.now()}`,
+        title: 'Ticket Guardado (Offline)',
+        message: `El ticket ${ticket.id} se guardó localmente y se subirá al volver la conexión.`,
+        type: 'warning',
+        timestamp: new Date().toISOString()
+      });
+
       this.nav('my-tickets');
     } finally {
-      btn.disabled = false;
-      document.getElementById('submit-txt').style.display = 'inline';
-      document.getElementById('submit-spinner').style.display = 'none';
+      if (btn) btn.disabled = false;
+      const bTxt = document.getElementById('submit-txt');
+      const bSpin = document.getElementById('submit-spinner');
+      if (bTxt) bTxt.style.display = 'inline';
+      if (bSpin) bSpin.style.display = 'none';
     }
   },
 
@@ -1147,21 +1231,30 @@ const APP = {
         if (el) el.textContent = val;
     });
 
-    const recent = all.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 10);
+    const recent = (all || []).slice().sort((a, b) => {
+        const da = a.createdAt ? new Date(a.createdAt) : 0;
+        const db = b.createdAt ? new Date(b.createdAt) : 0;
+        return db - da;
+    }).slice(0, 10);
+
     const tbody = document.querySelector('#table-admin-recent tbody');
     if (tbody) {
-        tbody.innerHTML = recent.map(t => `
+        tbody.innerHTML = recent.map(t => {
+            const tTitle = t.title || 'Sin título';
+            const tArea = t.area || 'General';
+            const tUser = this.uName(t.createdBy);
+            return `
             <tr>
                 <td><span class="tid">${t.id}</span></td>
-                <td><div style="font-weight:700">${this.esc(t.title)}</div><div style="font-size:10px; color:var(--t3)">${CAT_LABELS[t.category] || t.category}</div></td>
-                <td><div style="font-weight:700">${this.esc(this.uName(t.createdBy))}</div><div style="font-size:10px; color:var(--t3)">${t.area}</div></td>
+                <td><div style="font-weight:700">${this.esc(tTitle)}</div><div style="font-size:10px; color:var(--t3)">${CAT_LABELS[t.category] || t.category || 'Requerimiento'}</div></td>
+                <td><div style="font-weight:700">${this.esc(tUser)}</div><div style="font-size:10px; color:var(--t3)">${tArea}</div></td>
                 <td>${this.statusBadge(t.status)}</td>
                 <td>${this.priorityBadge(t.priority)}</td>
                 <td>${this.esc(t.assignedTo || '—')}</td>
                 <td>${this.timeAgo(t.createdAt)}</td>
                 <td><button class="icon-btn view-btn" onclick="APP.openModal('${t.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></td>
             </tr>
-        `).join('') || '<tr><td colspan="8" style="text-align:center; padding:40px; color:var(--t3)">No hay tickets recientes.</td></tr>';
+        `}).join('') || '<tr><td colspan="8" style="text-align:center; padding:40px; color:var(--t3)">No hay tickets recientes.</td></tr>';
     }
 
     const catEl = document.getElementById('admin-cat-chart');
@@ -1193,7 +1286,22 @@ const APP = {
                 </div>
             </div>`).join('') || '<p style="text-align:center; padding:20px; color:var(--t3)">Sin tickets críticos.</p>';
     }
+
+    // Alerta de modo offline
+    const dashNotice = document.getElementById('admin-dash-notice');
+    if (dashNotice) {
+      if (!API._up) {
+        dashNotice.innerHTML = `
+          <div style="background:#fff7ed; border:1.2px solid #fdba74; color:#9a3412; padding:12px 16px; border-radius:12px; margin-bottom:20px; font-size:13px; display:flex; align-items:center; gap:10px; font-weight:600;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Modo Resiliente: El servidor no responde. Los tickets mostrados son locales y podrían estar incompletos.
+          </div>`;
+      } else {
+        dashNotice.innerHTML = '';
+      }
+    }
   },
+
 
   renderAdminTickets() {
     const tbody = document.querySelector('#admin-tickets-table tbody');
@@ -1213,18 +1321,22 @@ const APP = {
       );
     }
 
-    tbody.innerHTML = filtered.map(t => `
+    tbody.innerHTML = (filtered || []).map(t => {
+        const tTitle = t.title || 'Sin título';
+        const tUser = this.uName(t.createdBy);
+        const tArea = t.area || 'General';
+        return `
         <tr>
             <td><span class="tid">${t.id}</span></td>
-            <td><div>${this.esc(t.title)}</div><div style="font-size:10px; color:var(--t3)">${CAT_LABELS[t.category] || t.category}</div></td>
-            <td><div>${this.esc(this.uName(t.createdBy))}</div><div style="font-size:10px; color:var(--t3)">${t.area}</div></td>
+            <td><div>${this.esc(tTitle)}</div><div style="font-size:10px; color:var(--t3)">${CAT_LABELS[t.category] || t.category || 'Requerimiento'}</div></td>
+            <td><div>${this.esc(tUser)}</div><div style="font-size:10px; color:var(--t3)">${tArea}</div></td>
             <td>${this.statusBadge(t.status)}</td>
             <td>${this.priorityBadge(t.priority)}</td>
             <td>${this.esc(t.assignedTo || '—')}</td>
             <td>${this.timeAgo(t.createdAt)}</td>
             <td><button class="icon-btn view-btn" onclick="APP.openModal('${t.id}')">Gestionar</button></td>
         </tr>
-    `).join('') || '<tr><td colspan="8" style="text-align:center; padding:40px; color:var(--t3)">Sin registros.</td></tr>';
+    `}).join('') || '<tr><td colspan="8" style="text-align:center; padding:40px; color:var(--t3)">Sin registros.</td></tr>';
   },
 
 
@@ -1689,11 +1801,19 @@ const APP = {
 
   async fetchNotifications() {
     if (!this.user) return;
+    const box = document.getElementById('notif-list');
+    if (box && !box.innerHTML.trim()) {
+        box.innerHTML = '<div style="padding:40px 20px; text-align:center; color:var(--t3);"><div class="spinner" style="margin:0 auto 10px;"></div>Cargando...</div>';
+    }
     try {
+
       const r = await API._fetch('/notifications');
       const list = await r.json();
-      
-      const unreadList = list.filter(n => !n.read);
+
+      const localNotifs = Store.getLocalNotifications();
+      const combined = [...localNotifs, ...list].sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+
+      const unreadList = combined.filter(n => !n.read);
       if (unreadList.length > 0) {
         const newest = unreadList[0];
         if (this._lastNotifId !== newest.id) {
@@ -1704,14 +1824,37 @@ const APP = {
         }
       }
 
-      this.renderNotifications(list);
-    } catch {}
+      this.renderNotifications(combined);
+    } catch (err) {
+      console.error('[NOTIF FETCH ERR]', err);
+      const localNotifs = Store.getLocalNotifications();
+      if (localNotifs.length > 0) {
+        this.renderNotifications(localNotifs);
+      } else {
+        this.renderNotifications([], true);
+      }
+    }
   },
 
-  renderNotifications(list) {
+  addLocalNotification(n) {
+    const local = Store.getLocalNotifications();
+    local.unshift({ ...n, read: false });
+    // Mantener solo los últimos 20
+    Store.saveLocalNotifications(local.slice(0, 20));
+    this.fetchNotifications();
+  },
+
+  renderNotifications(list, isErr = false) {
     const badge = document.getElementById('notif-badge');
     const box = document.getElementById('notif-list');
+    
+    if (isErr && box) {
+        box.innerHTML = '<div style="padding:40px 20px; text-align:center; color:var(--error); font-size:0.85rem; font-weight:600;">⚠️ Error de conexión con el servidor de notificaciones</div>';
+        return;
+    }
+
     const unread = list.filter(n => !n.read).length;
+
 
     if (badge) { badge.textContent = unread; badge.style.display = unread > 0 ? 'flex' : 'none'; }
     if (box) {
@@ -1766,30 +1909,46 @@ const APP = {
     if (btn) btn.onclick = e => { e.stopPropagation(); p.classList.toggle('active'); if (p.classList.contains('active')) this.fetchNotifications(); };
     document.getElementById('notif-read-all').onclick = async () => { await API._fetch('/notifications/read-all', { method: 'POST' }); this.fetchNotifications(); };
     document.onclick = () => p.classList.remove('active');
-    setInterval(() => this.fetchNotifications(), 20000);
+    setInterval(() => this.fetchNotifications(), 10000);
+  },
+
+  async syncOfflineTickets() {
+    if (!API._up || !API._dbConnected) return;
+    const local = Store.getLocalTickets();
+    const offline = local.filter(t => t.localOnly);
+    if (!offline.length) return;
+
+    this.showToast(`Sincronizando ${offline.length} tickets pendientes…`, 'info');
+    let count = 0;
+    for (const t of offline) {
+      try {
+        const tCopy = { ...t };
+        delete tCopy.localOnly;
+        const res = await API._fetch('/tickets', { method: 'POST', body: JSON.stringify(tCopy) });
+        if (res.ok) { t.localOnly = false; count++; }
+      } catch (err) { console.error('[SYNC ERR]', err); }
+    }
+    if (count > 0) {
+      Store.saveLocal(local);
+      this.showToast(`Sincronización completa: ${count} tickets subidos.`, 'success');
+    }
+  },
+
+  changeServerURL() {
+    const current = API_URL;
+    const n = prompt("Configuración de Servidor (URL del Backend):", current);
+    if (n !== null) {
+      localStorage.setItem('ice_api_override', n);
+      window.location.reload();
+    }
   }
 };
+
 
 window.APP = APP;
 document.addEventListener('DOMContentLoaded', () => {
   APP.init().then(() => {
-    if (APP.user) {
-      APP.bindNotifications();
-      APP.fetchNotifications();
-    }
-    
-    const tid = new URLSearchParams(window.location.search).get('ticketId');
-    if (tid) {
-      const waitT = () => {
-        if (APP.allTickets && APP.allTickets.length) {
-          const t = APP.allTickets.find(x => x.id == tid);
-          if (t) {
-            APP.showTicketDetails(t);
-            window.history.replaceState({}, '', window.location.pathname);
-          }
-        } else setTimeout(waitT, 200);
-      };
-      waitT();
-    }
+    // La vinculación se hace ahora en startApp para que sea inmediata tras login
   });
 });
+

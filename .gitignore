@@ -8,3 +8,6 @@ npm-debug.log
 error.log
 package-lock.json
 /backups/
+server/data/*.json
+server/data/*.xlsx
+server/data/*.db

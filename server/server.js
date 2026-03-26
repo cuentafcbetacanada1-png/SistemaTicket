@@ -1,4 +1,5 @@
 'use strict';
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -6,7 +7,6 @@ const fs = require('fs');
 const db = require('./db');
 const nodemailer = require('nodemailer');
 const Users = require('./users');
-require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -16,16 +16,17 @@ const transporter = nodemailer.createTransport({
   port: 587,
   secure: false, // STARTTLS
   auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-  connectionTimeout: 10000, // 10s de timeout inicial
+  connectionTimeout: 15000, 
   greetingTimeout: 5000,
   socketTimeout: 30000,
   pool: true, 
   maxConnections: 3,
   maxMessages: 50,
   tls: { 
-    rejectUnauthorized: false,
-    ciphers: 'SSLv3'
+    rejectUnauthorized: false
   }
+}, {
+  from: '"Iceberg Support" <sistema.tickets@iceberg.com.co>'
 });
 
 const LOGO_PATH = path.join(__dirname, '..', 'assets', 'logo-iceberg.png');
@@ -37,7 +38,7 @@ const EMAIL_ATTACHMENTS = fs.existsSync(LOGO_PATH) ? [{
 
 transporter.verify((err) => {
   if (err) console.error('[MAIL SETUP ERROR]', err.message);
-  else console.log('[MAIL SERVER READY] ✅ Listo para notificar a los 4 administradores.');
+  else console.log('[MAIL SERVER READY] ✅ Listo para notificar.');
 });
 
 const STAFF_EMAILS = {
@@ -46,25 +47,41 @@ const STAFF_EMAILS = {
   "Stiven Arevalo": "soporte2@iceberg.com.co",
   "Juan Ducuara": "aprendiz.sistemas@iceberg.com.co"
 };
-const ALL_ADMINS = Object.values(STAFF_EMAILS).join(", ");
+
+// Combinar emails del equipo fijo con los adicionales en .env y los dinámicos de Users
+const envAdmins = (process.env.ALL_ADMINS || "").split(",").map(e => e.trim()).filter(e => e);
+const STAFF_LIST = Object.values(STAFF_EMAILS);
+
+// Función dinámica: recalcula la lista de admins en cada envío (incluye cambios via /admin/emails)
+function getAllAdminEmails() {
+  const dynamicAdmins = (Users.getAdminEmails ? Users.getAdminEmails() : []).map(e => e.trim()).filter(e => e);
+  return [...new Set([...STAFF_LIST, ...envAdmins, ...dynamicAdmins])];
+}
+
+console.log(`[ICEBERG] Administradores Notificados (arranque): ${getAllAdminEmails().join(', ')}`);
+
+// BACKUP DIR — definido aquí para que esté disponible en todas las rutas
+const BACKUP_DIR = path.join(__dirname, 'backups');
+if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
+// Middleware de Seguridad (Asegurando acceso al Portal mientras se protegen los componentes)
 app.use((req, res, next) => {
   const ext = path.extname(req.path).toLowerCase();
   const sensitiveFiles = ['.env', '.gitignore', '.vscode', '.git', '.json', '.txt'];
   const sourceFiles = ['.js', '.css', '.html'];
   const emailLow = (req.path || '').toLowerCase();
 
-  // 1. Strictly block sensitive files/folders
+  // 1. Bloqueo estricto de archivos sensibles
   if (sensitiveFiles.includes(ext) || emailLow.includes('/package.json') || emailLow.includes('/.env') || emailLow.includes('/.git')) {
     if (req.path !== '/health' && req.path !== '/') {
       return res.status(403).json({ error: 'System policy: Restricted access' });
     }
   }
 
-  // 2. Block direct access to .js, .css, .html (except root)
+  // 2. Bloqueo de acceso directo a archivos fuente (excepto root)
   if (sourceFiles.includes(ext)) {
     const isDirectNav = req.headers['sec-fetch-dest'] === 'document' || 
                         req.headers['sec-fetch-mode'] === 'navigate' ||
@@ -106,11 +123,13 @@ app.use((req, res, next) => {
 
 app.use(express.static(path.join(__dirname, '..')));
 
+// VERSIÓN CORRECTA: Modo LocalJSON (No volver a poner MongoDB)
 app.get('/health', (req, res) => res.json({ 
   status: 'ok', 
   stable: true, 
-  v: '8.0 (MongoDB)',
-  dbMode: 'MongoDB (Railway)',
+  v: '9.6 (LocalJSON/StaffSync)',
+  dbConnected: db.isConnected(),
+  dbMode: 'Local File System (JSON)',
   timestamp: new Date().toISOString()
 }));
 
@@ -185,45 +204,75 @@ const getGridTable = (t) => `
     </table>
     <div style="margin-top: 25px;">
       <div style="font-size: 9px; color: #94a3b8; font-weight: bold; text-transform: uppercase; margin-bottom: 8px;">Mensaje Detallado</div>
-      <div style="background-color: #f8fafc; padding: 20px; border-radius: 6px; color: #334155; border-left: 4px solid #335495; font-size: 14px;">${t.description}</div>
+      <div style="background-color: #f8fafc; padding: 20px; border-radius: 6px; color: #334155; border-left: 4px solid #335495; font-size: 14px;">${t.description || 'Sin descripción'}</div>
     </div>`;
 
 app.post('/tickets', async (req, res) => {
   try {
     const actor = req.headers['iceberg-user'] || 'Usuario Portal';
+
+    // Resolución de nombre real desde el sistema de usuarios si es posible
+    let realName = actor;
+    try {
+      const uInfo = Users.getByEmail(actor);
+      if (uInfo && uInfo.name) realName = uInfo.name;
+    } catch(e) {}
+
+    // Resolver createdBy: usar el del body si viene bien, sino reconstruir desde el actor
+    let createdBy = req.body.createdBy;
+    if (!createdBy || !createdBy.name || createdBy.name === 'Sistema' || createdBy.name === 'Usuario Corporativo') {
+      createdBy = {
+        id:    actor.includes('@') ? actor.split('@')[0] : 'user-001',
+        name:  realName,
+        email: actor.includes('@') ? actor : (req.body.createdBy?.email || '')
+      };
+    }
+
     const tData = {
       ...req.body,
-      id: req.body.id || `Ticket #${Date.now().toString().slice(-4)}`,
-      status: req.body.status || 'abierto',
-      // SEGURIDAD: Siempre usamos el nombre del actor real si el portal manda "Sistema"
-      createdBy: (req.body.createdBy && req.body.createdBy.name && req.body.createdBy.name !== 'Sistema') ? req.body.createdBy : { id: 'user-001', name: actor, email: actor },
+      id:        req.body.id || `Ticket #${Date.now().toString().slice(-4)}`,
+      status:    req.body.status || 'abierto',
+      title:     req.body.title || 'Sin título',
+      description: req.body.description || req.body.title || 'Sin descripción',
+      createdBy,
       createdAt: req.body.createdAt || new Date().toISOString(),
       updatedAt: req.body.updatedAt || new Date().toISOString(),
-      notes: req.body.notes || [],
-      history: req.body.history || []
+      notes:     req.body.notes || [],
+      history:   req.body.history || []
     };
 
     const t = await db.create(tData);
     await db.addAuditLog(actor, 'CREAR_TICKET', t.id, `Ticket "${t.title}" reportado por ${t.createdBy.name}`);
 
-    await createNotification(`Nuevo Ticket: ${t.id}`, `${t.createdBy.name} ha reportado: ${t.title}`, t.id, 'all', 'info');
+    // Notificación interna (campana) — datos siempre definidos
+    await createNotification(
+      `Nuevo Ticket: ${t.id}`,
+      `${t.createdBy.name} ha reportado: ${t.title}`,
+      t.id, 'all', 'info'
+    );
 
+    // Correo a los 4 administradores
+    const adminEmails = getAllAdminEmails();
     const adminMail = {
-      from: process.env.EMAIL_USER,
-      to: ALL_ADMINS,
+      to: adminEmails,
       subject: `Solicitud #${t.id} de IT Portal`,
       html: renderEmail(t, `Nueva solicitud técnica`, `NOTIFICACIÓN TI`, `NUEVA`, '#335495',
         `<p>Se ha registrado un caso con ID <strong>${t.id}</strong>.</p>${getGridTable(t)}`),
       attachments: EMAIL_ATTACHMENTS
     };
-    transporter.sendMail(adminMail).catch(e => console.error('[ADM-MAIL-ERR]', e));
+    transporter.sendMail(adminMail).catch(e => console.error('[ADM-MAIL-ERR]', e.message));
 
-    const userConfirmationMail = {
-      ...adminMail,
-      to: t.createdBy.email,
-      subject: `✅ Registro Exitoso: #${t.id}`
-    };
-    transporter.sendMail(userConfirmationMail).catch(e => console.error('[USR MAIL]', e.message));
+    // Correo de confirmación al usuario (solo si tiene email válido)
+    if (t.createdBy.email && t.createdBy.email.includes('@')) {
+      const userConfirmationMail = {
+        to: t.createdBy.email,
+        subject: `✅ Registro Exitoso: #${t.id}`,
+        html: renderEmail(t, `Tu solicitud ha sido registrada`, `CONFIRMACIÓN DE SOLICITUD`, `RECIBIDO`, '#16a34a',
+          `<p>Hola <strong>${t.createdBy.name}</strong>, tu solicitud con ID <strong>#${t.id}</strong> ha sido registrada correctamente. Pronto un técnico atenderá tu caso.</p>${getGridTable(t)}`),
+        attachments: EMAIL_ATTACHMENTS
+      };
+      transporter.sendMail(userConfirmationMail).catch(e => console.error('[USR MAIL]', e.message));
+    }
 
     res.status(201).json(t);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -252,7 +301,6 @@ app.put('/tickets/:id', async (req, res) => {
 
       // 1. Notify the User (Creator)
       const userMail = {
-        from: process.env.EMAIL_USER,
         to: updated.createdBy.email,
         subject: isStatusChange ? `🔔 Actualización #${updated.id} → ${statusLabel}` : `👤 Técnico Asignado: #${updated.id}`,
         html: renderEmail(updated, isStatusChange ? `Estado actualizado: ${statusLabel}` : 'Técnico asignado', `SEGUIMIENTO DE CASO`, isStatusChange ? 'ACTUALIZACIÓN' : 'ASIGNACIÓN', '#1e293b',
@@ -271,7 +319,7 @@ app.put('/tickets/:id', async (req, res) => {
 
       // 3. Notify ALL Admins (if status is active/resolved/fixed)
       if (isStatusChange && ['en-progreso', 'resuelto', 'cerrado'].includes(updated.status)) {
-        const broadcastMail = { ...userMail, to: ALL_ADMINS, subject: `📢 Reporte de Cambio: #${updated.id} es ${statusLabel}` };
+        const broadcastMail = { ...userMail, to: getAllAdminEmails(), subject: `📢 Reporte de Cambio: #${updated.id} es ${statusLabel}` };
         broadcastMail.html = renderEmail(updated, `Notificación de Estado`, `CONTROL TI`, statusLabel, '#0f172a',
            `<p>El ticket <strong>#${updated.id}</strong> ha pasado a estado <strong>${statusLabel}</strong>.</p>${getGridTable(updated)}`);
         transporter.sendMail(broadcastMail).catch(e => console.error('[BROAD-MAIL-ERR]', e));
@@ -294,8 +342,7 @@ app.delete('/tickets/:id', async (req, res) => {
     if (t) {
       await db.addAuditLog(actor, 'ELIMINAR_TICKET', id, `Ticket de ${t.createdBy?.name || 'Usuario'} eliminado`);
       const delMail = {
-        from: process.env.EMAIL_USER,
-        to: ALL_ADMINS,
+        to: getAllAdminEmails(),
         subject: `El ${t.id} ha sido eliminado correctamente`,
         html: renderEmail(t, `Ticket eliminado del sistema`, `SEGURIDAD TI`, `BORRADO`, '#e11d48',
           `<p>El Ticket <strong>#${t.id}</strong> con título "<strong>${t.title}</strong>" ha sido eliminado por un administrador.</p>`),
@@ -307,10 +354,6 @@ app.delete('/tickets/:id', async (req, res) => {
     res.json({ success: true });
   } catch (e) { res.status(500).send(); }
 });
-
-// BACKUP & EXPORT
-const BACKUP_DIR = path.join(__dirname, 'backups');
-if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
 
 app.get('/backup/list', (req, res) => {
   try {
@@ -356,7 +399,6 @@ app.put('/admin/users/toggle/:id', async (req, res) => {
     const actor = req.headers['iceberg-user'] || 'Desconocido';
     const result = await Users.update(req.params.id, {});
     if (!result) return res.status(404).json({ error: 'No encontrado' });
-    // Toggle activo en memoria
     result.active = !result.active;
     await Users.update(req.params.id, { active: result.active });
     await db.addAuditLog(actor, 'TOGGLE_USUARIO', result.email || req.params.id, `Estado cambiado a: ${result.active ? 'Activo' : 'Inactivo'}`);
@@ -377,16 +419,6 @@ app.get('/admin/audit-logs', async (req, res) => {
   try {
     const logs = await db.getAuditLogs(200);
     res.json(logs);
-  } catch (e) { res.status(500).json([]); }
-});
-
-app.get('/admin/backups', async (req, res) => {
-  try {
-    const files = fs.readdirSync(BACKUP_DIR).filter(f => f.endsWith('.json')).map(f => {
-      const s = fs.statSync(path.join(BACKUP_DIR, f));
-      return { filename: f, createdAt: s.mtime, sizeBytes: s.size };
-    }).sort((a, b) => b.createdAt - a.createdAt);
-    res.json(files);
   } catch (e) { res.status(500).json([]); }
 });
 
@@ -431,7 +463,6 @@ app.get('/backup/export/csv', async (req, res) => {
   } catch (e) { res.status(500).send(); }
 });
 
-// AUTH
 app.post('/auth/login-email', async (req, res) => {
   try {
     const email = (req.body.email || '').toLowerCase().trim();
@@ -473,18 +504,15 @@ app.post('/auth/sync-microsoft', async (req, res) => {
     const { email, name } = req.body;
     const emailLow = (email || '').toLowerCase().trim();
     if (!emailLow) return res.status(400).send();
-
     if (!Users.getAdminEmails().includes(emailLow)) {
       return res.status(403).json({ error: 'Acceso restringido. Solo administradores autorizados.' });
     }
-
     let u = await Users.getByEmail(emailLow);
     if (!u) u = await Users.create({ email: emailLow, name: name || emailLow.split('@')[0], role: 'admin' });
     res.json({ token: Buffer.from(emailLow).toString('base64'), user: u });
   } catch (e) { res.status(500).send(); }
 });
 
-// NOTIFICATIONS ENDPOINTS
 app.get('/notifications', async (req, res) => {
   try {
     const rows = await db.getNotifications(50);
@@ -519,7 +547,7 @@ app.get('*', (req, res) => {
 });
 
 const server = app.listen(PORT, () => {
-  console.log(`[ICEBERG] ✅ ONLINE | PUERTO: ${PORT} | V: 7.2 stable`);
+  console.log(`[ICEBERG] ✅ ONLINE | PUERTO: ${PORT} | V: 9.6 (LocalJSON/StaffSync)`);
   Users.initialize().catch(() => { });
 });
 

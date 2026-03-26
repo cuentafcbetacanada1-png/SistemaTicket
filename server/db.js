@@ -1,161 +1,125 @@
 'use strict';
-const mongoose = require('mongoose');
+const fs = require('fs');
+const path = require('path');
 
-// Prioridad: MONGODB_URL (Railway interno) > DATABASE_URL (Railway público) > MONGO_URL (local) > localhost
-const MONGO_URI =
-  process.env.MONGODB_URL ||
-  process.env.DATABASE_URL ||
-  process.env.MONGO_URL ||
-  'mongodb://localhost:27017/iceberg_tickets';
+// RUTAS DE ARCHIVOS (server/data/)
+const DATA_DIR = path.join(__dirname, 'data');
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
-const safeHost = MONGO_URI.replace(/\/\/[^@]+@/, '//***@');
-console.log('[DB] Conectando a:', safeHost);
+const PATHS = {
+  tickets:       path.join(DATA_DIR, 'tickets.json'),
+  notifications: path.join(DATA_DIR, 'notifications.json'),
+  audit:         path.join(DATA_DIR, 'audit.json')
+};
 
-// ── bufferCommands: false → operaciones fallan INMEDIATAMENTE si no hay conexión
-// ── no se quedan bloqueadas esperando 30s
-mongoose.set('bufferCommands', false);
-
-mongoose.connect(MONGO_URI, {
-  serverSelectionTimeoutMS: 5000,   // Falla rápido si MongoDB no responde (era 15s)
-  socketTimeoutMS: 15000,
-  connectTimeoutMS: 8000,
-  family: 4,
-  retryWrites: true,
-  w: 'majority'
-})
-  .then(() => console.log('✅ MongoDB conectado | Tickets/Notificaciones/Audit activos'))
-  .catch(err => console.error('❌ ERROR CONEXIÓN MONGO:', err.message));
-
-// Reconexión silenciosa: evitar que los errores de reconexión hagan ruido
-mongoose.connection.on('error', err => console.error('[DB] Error de conexión:', err.message));
-mongoose.connection.on('disconnected', () => console.warn('[DB] MongoDB desconectado, reintentando...'));
-mongoose.connection.on('reconnected', () => console.log('[DB] ✅ MongoDB reconectado'));
-
-// =====================================================================
-// ESQUEMAS — Solo Tickets, Notificaciones y Audit (Usuarios = Excel)
-// =====================================================================
-
-const ticketSchema = new mongoose.Schema({
-  id:          { type: String, unique: true },
-  title:       String,
-  description: String,
-  category:    String,
-  priority:    String,
-  status:      String,
-  area:        String,
-  location:    String,
-  asset:       String,
-  software:    String,
-  assignedTo:  String,
-  createdBy:   Object,
-  phone:       String,
-  createdAt:   { type: Date, default: Date.now },
-  updatedAt:   { type: Date, default: Date.now },
-  notes:       { type: Array, default: [] },
-  history:     { type: Array, default: [] }
-});
-
-const notificationSchema = new mongoose.Schema({
-  id:        { type: String, unique: true },
-  userId:    String,
-  ticketId:  String,
-  title:     String,
-  message:   String,
-  type:      String,
-  timestamp: { type: Date, default: Date.now },
-  read:      { type: Boolean, default: false }
-});
-
-const auditSchema = new mongoose.Schema({
-  actor:     String,
-  action:    String,
-  targetId:  String,
-  details:   String,
-  timestamp: { type: Date, default: Date.now }
-});
-
-const Ticket       = mongoose.models.Ticket       || mongoose.model('Ticket',       ticketSchema);
-const Notification = mongoose.models.Notification || mongoose.model('Notification', notificationSchema);
-const AuditLog     = mongoose.models.AuditLog     || mongoose.model('AuditLog',     auditSchema);
-
-// Helper: chequea si MongoDB está conectado antes de operar
-function isConnected() {
-  return mongoose.connection.readyState === 1;
+// HELPER: Lectura/Escritura Segura
+function readJSON(file) {
+  try {
+    if (!fs.existsSync(file)) return [];
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch (e) { console.error(`[DB-READ-ERR] ${file}:`, e.message); return []; }
 }
 
+function writeJSON(file, data) {
+  try {
+    fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
+    return true;
+  } catch (e) { console.error(`[DB-WRITE-ERR] ${file}:`, e.message); return false; }
+}
+
+// INICIALIZACIÓN: Asegurar que los archivos existan
+Object.values(PATHS).forEach(p => { if (!fs.existsSync(p)) writeJSON(p, []); });
+
+console.log('✅ [DB] Modo Local JSON Activo | Persistencia en server/data/');
+
 module.exports = {
-  isConnected,
+  isConnected: () => true, // Siempre conectado en modo local
+  isBackup: ()    => false,
 
   // ======= TICKETS =======
   async getAll() {
-    if (!isConnected()) return [];
-    try { return await Ticket.find({}).sort({ createdAt: -1 }).lean(); }
-    catch (e) { console.error('[DB] getAll error:', e.message); return []; }
+    return readJSON(PATHS.tickets).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   },
+
   async getById(id) {
-    if (!isConnected()) return null;
-    try { return await Ticket.findOne({ id }).lean(); }
-    catch (e) { return null; }
+    const all = readJSON(PATHS.tickets);
+    return all.find(t => t.id === id) || null;
   },
+
   async create(t) {
-    if (!isConnected()) throw new Error('Base de datos no disponible. Reintenta en unos segundos.');
-    const ticket = new Ticket({ ...t, id: t.id || `T-${Date.now()}` });
-    return await ticket.save();
+    const all = readJSON(PATHS.tickets);
+    const id = t.id || `T-${Date.now()}`;
+    const nuovo = { ...t, id, createdAt: t.createdAt || new Date().toISOString() };
+    all.push(nuovo);
+    writeJSON(PATHS.tickets, all);
+    return nuovo;
   },
+
   async update(id, patch) {
-    if (!isConnected()) return null;
-    try {
-      return await Ticket.findOneAndUpdate(
-        { id },
-        { ...patch, updatedAt: new Date() },
-        { returnDocument: 'after' }
-      ).lean();
-    } catch (e) { return null; }
+    const all = readJSON(PATHS.tickets);
+    const idx = all.findIndex(t => t.id === id);
+    if (idx === -1) return null;
+    all[idx] = { ...all[idx], ...patch, updatedAt: new Date().toISOString() };
+    writeJSON(PATHS.tickets, all);
+    return all[idx];
   },
+
   async remove(id) {
-    if (!isConnected()) return;
-    try { await Ticket.deleteOne({ id }); } catch (e) {}
+    const all = readJSON(PATHS.tickets);
+    const filtered = all.filter(t => t.id !== id);
+    writeJSON(PATHS.tickets, filtered);
   },
+
   async removeAll() {
-    if (!isConnected()) return;
-    try { await Ticket.deleteMany({}); } catch (e) {}
+    writeJSON(PATHS.tickets, []);
   },
 
   // ======= NOTIFICACIONES =======
   async getNotifications(limit = 50) {
-    if (!isConnected()) return [];
-    try { return await Notification.find({}).sort({ timestamp: -1 }).limit(limit).lean(); }
-    catch (e) { return []; }
+    return readJSON(PATHS.notifications)
+      .sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0))
+      .reverse()
+      .slice(0, limit);
   },
+
   async markNotificationRead(id) {
-    if (!isConnected()) return;
-    try { await Notification.updateOne({ id }, { read: true }); } catch (e) {}
+    const all = readJSON(PATHS.notifications);
+    const n = all.find(x => x.id === id);
+    if (n) { n.read = true; writeJSON(PATHS.notifications, all); }
   },
+
   async markAllNotificationsRead() {
-    if (!isConnected()) return;
-    try { await Notification.updateMany({}, { read: true }); } catch (e) {}
+    const all = readJSON(PATHS.notifications);
+    all.forEach(n => n.read = true);
+    writeJSON(PATHS.notifications, all);
   },
+
   async createNotification(n) {
-    if (!isConnected()) return; // silencioso cuando BD está caída
-    try {
-      const notif = new Notification({ ...n, id: n.id || `N-${Date.now()}` });
-      await notif.save();
-    } catch (e) {}
+    const all = readJSON(PATHS.notifications);
+    const nuovo = { 
+      ...n, 
+      id: n.id || `N-${Date.now()}`, 
+      timestamp: n.timestamp || new Date().toISOString(),
+      read: false 
+    };
+    all.push(nuovo);
+    writeJSON(PATHS.notifications, all);
+    return nuovo;
   },
 
   // ======= AUDIT =======
   async addAuditLog(actor, action, targetId, details = '') {
-    if (!isConnected()) return; // silencioso cuando BD está caída
-    try {
-      const log = new AuditLog({ actor, action, targetId, details });
-      await log.save();
-    } catch (e) {}
-  },
-  async getAuditLogs(limit = 200) {
-    if (!isConnected()) return [];
-    try { return await AuditLog.find({}).sort({ timestamp: -1 }).limit(limit).lean(); }
-    catch (e) { return []; }
+    const all = readJSON(PATHS.audit);
+    all.push({ 
+      actor, action, targetId, details, 
+      timestamp: new Date().toISOString() 
+    });
+    // Limitar logs de auditoría a los últimos 1000 para no inflar el JSON
+    if (all.length > 1000) all.shift();
+    writeJSON(PATHS.audit, all);
   },
 
-  isBackup() { return false; }
+  async getAuditLogs(limit = 200) {
+    return readJSON(PATHS.audit).reverse().slice(0, limit);
+  }
 };

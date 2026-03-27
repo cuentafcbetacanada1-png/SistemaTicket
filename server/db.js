@@ -9,7 +9,8 @@ const PATHS = {
   tickets:       path.join(DATA_DIR, 'tickets.json'),
   notifications: path.join(DATA_DIR, 'notifications.json'),
   audit:         path.join(DATA_DIR, 'audit.json'),
-  attachments:   path.join(DATA_DIR, 'attachments')
+  attachments:   path.join(DATA_DIR, 'attachments'),
+  sequence:      path.join(DATA_DIR, 'sequence.json')
 };
 
 if (!fs.existsSync(PATHS.attachments)) fs.mkdirSync(PATHS.attachments, { recursive: true });
@@ -28,7 +29,13 @@ function writeJSON(file, data) {
   } catch (e) { console.error(`[DB-WRITE-ERR] ${file}:`, e.message); return false; }
 }
 
-Object.values(PATHS).forEach(p => { if (!fs.existsSync(p)) writeJSON(p, []); });
+Object.values(PATHS).forEach(p => { 
+  if (p === PATHS.attachments) return; 
+  if (!fs.existsSync(p)) {
+    if (p === PATHS.sequence) writeJSON(p, { nextId: 1 });
+    else writeJSON(p, []); 
+  }
+});
 
 console.log('✅ [DB] Modo Local JSON Activo | Persistencia en server/data/');
 
@@ -47,11 +54,30 @@ module.exports = {
 
   async create(t) {
     const all = readJSON(PATHS.tickets);
-    const id = t.id || `T-${Date.now()}`;
+    
+    // Generar ID secuencial
+    const seq = readJSON(PATHS.sequence);
+    const id = `#${seq.nextId || 1}`;
+    seq.nextId = (seq.nextId || 1) + 1;
+    writeJSON(PATHS.sequence, seq);
+
     const nuovo = { ...t, id, createdAt: t.createdAt || new Date().toISOString() };
     all.push(nuovo);
     writeJSON(PATHS.tickets, all);
     return nuovo;
+  },
+
+  async resetAll() {
+    writeJSON(PATHS.tickets, []);
+    writeJSON(PATHS.audit, []);
+    writeJSON(PATHS.sequence, { nextId: 1 });
+    // Opcional: limpiar archivos adjuntos físicos
+    try {
+      const files = fs.readdirSync(PATHS.attachments);
+      for (const file of files) {
+        fs.unlinkSync(path.join(PATHS.attachments, file));
+      }
+    } catch(e) {}
   },
 
   async update(id, patch) {
@@ -132,5 +158,17 @@ module.exports = {
 
   async getAuditLogs(limit = 400) {
     return readJSON(PATHS.audit).reverse().slice(0, limit);
+  },
+
+  resetAll: async function() {
+    writeJSON(PATHS.tickets, []);
+    writeJSON(PATHS.audit, []);
+    writeJSON(PATHS.sequence, { nextId: 1 });
+    try {
+      const files = fs.readdirSync(PATHS.attachments);
+      for (const file of files) {
+        fs.unlinkSync(path.join(PATHS.attachments, file));
+      }
+    } catch(e) {}
   }
 };

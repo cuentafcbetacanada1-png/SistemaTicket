@@ -163,7 +163,8 @@ const EMAIL_ATTACHMENTS = fs.existsSync(LOGO_PATH) ? [{
 }] : [];
 
 const ADMIN_RECIPIENTS = [
-  'aprendiz.sistemas@iceberg.com.co'
+  'aprendiz.sistemas@iceberg.com.co',
+  "soporte2@iceberg.com.co"
 ];
 
 transporter.verify((err) => {

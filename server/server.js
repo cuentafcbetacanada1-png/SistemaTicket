@@ -62,11 +62,32 @@ async function sendMailMicrosoftGraph(mailOptions) {
     const recipients = Array.isArray(mailOptions.to) ? mailOptions.to : [mailOptions.to];
     const emailUser = clean(process.env.EMAIL_USER);
     const token = await getMicrosoftToken();
+    const attachments = (mailOptions.attachments || []).map(a => {
+      let contentBytes = '';
+      if (a.path) {
+        try { contentBytes = fs.readFileSync(a.path).toString('base64'); } catch(e) { return null; }
+      } else if (a.content) {
+        contentBytes = Buffer.isBuffer(a.content) ? a.content.toString('base64') : Buffer.from(a.content).toString('base64');
+      } else if (typeof a.data === 'string' && a.data.includes('base64,')) {
+        contentBytes = a.data.split('base64,')[1];
+      }
+
+      if (!contentBytes) return null;
+      return {
+        '@odata.type': '#microsoft.graph.fileAttachment',
+        name: a.filename || 'attachment',
+        contentBytes: contentBytes,
+        isInline: !!a.cid,
+        contentId: a.cid || null
+      };
+    }).filter(x => x !== null);
+
     const data = JSON.stringify({
       message: {
         subject: mailOptions.subject,
         body: { contentType: 'HTML', content: mailOptions.html },
-        toRecipients: recipients.map(e => ({ emailAddress: { address: e.trim() } }))
+        toRecipients: recipients.map(e => ({ emailAddress: { address: e.trim() } })),
+        attachments: attachments
       }
     });
     const options = {
@@ -288,10 +309,13 @@ const getGridTable = (t) => {
     const attachHtml = t.attachments && t.attachments.length > 0 
       ? t.attachments.map(a => {
           if (a.type && a.type.startsWith('image/')) {
-            return `<div style="display:inline-block; margin-right:10px; margin-top:10px; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; vertical-align:top; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
-                      <a href="${a.data}" target="_blank" style="display:block; text-decoration:none;">
-                        <img src="${a.data}" style="height:120px; width:auto; display:block;" alt="adjunto">
-                      </a>
+            return `<div style="display:inline-block; margin-right:12px; margin-top:12px; vertical-align:top; text-align:center;">
+                      <div style="border:1px solid #e2e8f0; border-radius:10px; overflow:hidden; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1); background:#ffffff; margin-bottom:6px;">
+                        <a href="${a.data}" target="_blank" style="display:block; text-decoration:none;">
+                          <img src="${a.data}" style="height:140px; width:auto; display:block;" alt="adjunto">
+                        </a>
+                      </div>
+                      <a href="${a.data}" target="_blank" style="color:#335495; font-size:10px; font-weight:bold; text-decoration:underline;">🔍 AMPLIAR IMAGEN</a>
                     </div>`;
           }
           return `<div style="display:inline-block; margin-right:8px; margin-top:8px; padding:6px 12px; background:#f1f5f9; border-radius:6px; font-size:11px; color:#475569; border:1px solid #e2e8f0; vertical-align:top;">📎 ${a.name}</div>`;

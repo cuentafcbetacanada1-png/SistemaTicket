@@ -8,8 +8,11 @@ if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 const PATHS = {
   tickets:       path.join(DATA_DIR, 'tickets.json'),
   notifications: path.join(DATA_DIR, 'notifications.json'),
-  audit:         path.join(DATA_DIR, 'audit.json')
+  audit:         path.join(DATA_DIR, 'audit.json'),
+  attachments:   path.join(DATA_DIR, 'attachments')
 };
+
+if (!fs.existsSync(PATHS.attachments)) fs.mkdirSync(PATHS.attachments, { recursive: true });
 
 function readJSON(file) {
   try {
@@ -101,17 +104,33 @@ module.exports = {
     return nuovo;
   },
 
-  async addAuditLog(actor, action, targetId, details = '') {
+  async addAuditLog(actor, action, targetId, details = '', snapshot = null) {
     const all = readJSON(PATHS.audit);
     all.push({ 
-      actor, action, targetId, details, 
+      actor, action, targetId, details, snapshot,
       timestamp: new Date().toISOString() 
     });
-    if (all.length > 1000) all.shift();
+    if (all.length > 2000) all.shift();
     writeJSON(PATHS.audit, all);
   },
 
-  async getAuditLogs(limit = 200) {
+  async saveAttachment(id, file) {
+    if (!file.data || !file.name) return null;
+    try {
+      const base64Data = file.data.includes('base64,') ? file.data.split('base64,')[1] : file.data;
+      const buffer = Buffer.from(base64Data, 'base64');
+      const safeName = file.name.replace(/[^a-z0-9.]/gi, '_').toLowerCase();
+      const filename = `${id}_${Date.now()}_${safeName}`;
+      const fullPath = path.join(PATHS.attachments, filename);
+      fs.writeFileSync(fullPath, buffer);
+      return filename;
+    } catch(e) {
+      console.error('[DB-ATTACH-ERR]', e.message);
+      return null;
+    }
+  },
+
+  async getAuditLogs(limit = 400) {
     return readJSON(PATHS.audit).reverse().slice(0, limit);
   }
 };

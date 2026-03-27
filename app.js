@@ -1527,8 +1527,8 @@ const APP = {
     };
   },
 
-  openModal(id) {
-    const t = this.tickets.find(x => x.id === id);
+  openModal(id, isSnapshot = false, snapshotData = null) {
+    const t = isSnapshot ? snapshotData : this.tickets.find(x => x.id === id);
     if (!t) return;
     this.openTicketId = id;
     const isAdmin = this.user.role === 'admin';
@@ -1543,8 +1543,13 @@ const APP = {
     const mNotesList = document.getElementById('m-notes-list');
     const mFooter = document.getElementById('m-footer');
 
-    if (mId) mId.textContent = t.id;
-    if (mTitle) mTitle.textContent = t.title;
+    if (mId) mId.textContent = isSnapshot ? `RESPALDO DE ${t.id}` : t.id;
+    if (mTitle) {
+      mTitle.textContent = t.title;
+      if (isSnapshot) {
+        mTitle.innerHTML += ' <span style="font-size: 10px; background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 6px; vertical-align: middle; margin-left: 8px;">VISTA DE HISTORIAL</span>';
+      }
+    }
     if (mDesc) mDesc.textContent = t.description;
     if (mStatusBox) mStatusBox.innerHTML = this.statusBadge(t.status);
     if (mPriorityBox) mPriorityBox.innerHTML = this.priorityBadge(t.priority);
@@ -1577,7 +1582,7 @@ const APP = {
     }
 
     if (mAssignBox) {
-      if (isAdmin) {
+      if (isAdmin && !isSnapshot) {
         mAssignBox.innerHTML = `
           <select id="m-assign-sel" style="width:100%; border:none; background:transparent; font-weight:700; color:var(--primary); font-family:inherit; cursor:pointer;" onchange="APP.updateAssignment('${t.id}', this.value)">
              <option value="">Sin asignar</option>
@@ -1605,7 +1610,7 @@ const APP = {
     }
 
     if (mFooter) {
-      if (isAdmin) {
+      if (isAdmin && !isSnapshot) {
         mFooter.innerHTML = `
           <div style="display:flex; align-items:center; gap:16px; width:100%; justify-content:space-between; flex-wrap:wrap;">
              <button onclick="APP.confirmDeleteTicket('${t.id}')" style="padding:12px 20px; border-radius:12px; border:2.2px solid #fecaca; background:#fff1f2; color:#be123c; font-weight:800; font-size:0.85rem; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; gap:8px;" onmouseover="this.style.background='#ffe4e6'" onmouseout="this.style.background='#fff1f2'">
@@ -1623,9 +1628,12 @@ const APP = {
           </div>
         `;
       } else {
-        mFooter.innerHTML = `<button class="btn-ghost" onclick="APP.closeModal()" style="width:100%;">Cerrar vista</button>`;
+        mFooter.innerHTML = `<button class="btn-ghost" onclick="APP.closeModal()" style="width:100%;">Cerrar vista ${isSnapshot ? 'de historial' : ''}</button>`;
       }
     }
+
+    const mNoteForm = document.querySelector('.m-note-form');
+    if (mNoteForm) mNoteForm.style.display = isSnapshot ? 'none' : 'flex';
 
     document.getElementById('modal-ticket').style.display = 'flex';
   },
@@ -1921,18 +1929,34 @@ const APP = {
     if (!tbody) return;
     try {
       const logs = await API.getAuditLogs();
-      tbody.innerHTML = logs.map(l => `
+      tbody.innerHTML = logs.map((l, idx) => {
+        const hasSnapshot = !!l.snapshot;
+        return `
         <tr>
           <td style="font-size:11px; color:var(--t3)">${new Date(l.timestamp).toLocaleString()}</td>
           <td style="font-weight:700">${this.esc(l.actor)}</td>
           <td><span class="pill" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1">${l.action}</span></td>
           <td><span class="tid">${l.targetId}</span></td>
-          <td style="font-size:12px">${this.esc(l.details)}</td>
+          <td style="font-size:12px">
+            ${this.esc(l.details)}
+            ${hasSnapshot ? `<button class="btn-ghost" onclick="APP.viewAuditSnapshot(${idx})" style="padding:2px 8px; font-size:10px; margin-left:8px; border:1px solid var(--border);">📂 VER RESPALDO</button>` : ''}
+          </td>
         </tr>
-      `).join('') || '<tr><td colspan="5" style="text-align:center; padding:40px; color:var(--t3)">Sin registros de auditoría.</td></tr>';
+      `}).join('') || '<tr><td colspan="5" style="text-align:center; padding:40px; color:var(--t3)">Sin registros de auditoría.</td></tr>';
+      this._auditLogsCache = logs; // Guardar para visualización
     } catch (err) {
       tbody.innerHTML = `<tr><td colspan="5">Error: ${err.message}</td></tr>`;
     }
+  },
+
+  viewAuditSnapshot(idx) {
+    const log = this._auditLogsCache[idx];
+    if (!log || !log.snapshot) return;
+    const t = log.snapshot;
+    
+    // Usar el modal existente pero adaptado para visualización de respaldo
+    const modal = document.getElementById('modal-ticket');
+    this.openModal(t.id, true, t); // Nuevo parámetro para indicar que es un snapshot
   },
 
   bindNotifications() {

@@ -386,7 +386,14 @@ app.post('/tickets', async (req, res) => {
     };
 
     const t = await db.create(tData);
-    await db.addAuditLog(actor, 'CREAR_TICKET', t.id, `Ticket "${t.title}" reportado por ${t.createdBy.name}`);
+
+    if (t.attachments && t.attachments.length > 0) {
+      for (const a of t.attachments) {
+        await db.saveAttachment(t.id, a);
+      }
+    }
+
+    await db.addAuditLog(actor, 'CREAR_TICKET', t.id, `Ticket "${t.title}" reportado por ${t.createdBy.name}`, t);
 
     await createNotification(
       `Nuevo Ticket: ${t.id}`,
@@ -455,11 +462,13 @@ app.put('/tickets/:id', async (req, res) => {
 app.delete('/tickets/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const actor = req.headers['iceberg-user'] || 'Desconocido';
+    const actor = req.headers['iceberg-user'] || 'Admin';
     const t = await db.getById(id);
-    await db.remove(id);
     if (t) {
-      await db.addAuditLog(actor, 'ELIMINAR_TICKET', id, `Ticket de ${t.createdBy?.name || 'Usuario'} eliminado`);
+      // Snapshot completo antes de borrar para recuperación permanente
+      await db.addAuditLog(actor, 'ELIMINAR_TICKET', id, `Ticket "${t.title}" de ${t.createdBy.name} ELIMINADO. Snapshot disponible.`, t);
+      await db.remove(id);
+      
       const delMail = {
         to: ADMIN_RECIPIENTS,
         subject: `El ${t.id} ha sido eliminado correctamente`,
@@ -536,7 +545,7 @@ app.delete('/admin/users/:id', async (req, res) => {
 
 app.get('/admin/audit-logs', async (req, res) => {
   try {
-    const logs = await db.getAuditLogs(200);
+    const logs = await db.getAuditLogs(400);
     res.json(logs);
   } catch (e) { res.status(500).json([]); }
 });

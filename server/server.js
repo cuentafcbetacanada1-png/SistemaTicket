@@ -92,11 +92,14 @@ async function sendMailMicrosoftGraph(mailOptions) {
 
 async function sendMailResilient(mailOptions) {
   const recipients = Array.isArray(mailOptions.to) ? mailOptions.to : [mailOptions.to];
+  console.log(`[MAIL-FLOW] Iniciando envío para: ${recipients.join(', ')}`);
   
   // 1. SOLUCIÓN LIMPIA: Microsoft Graph API (Oficial Azure)
   if (process.env.AZURE_CLIENT_SECRET) {
+    console.log(`[MAIL-FLOW] Intentando vía Microsoft Graph API...`);
     const result = await sendMailMicrosoftGraph(mailOptions);
     if (result) return result;
+    console.warn(`[MAIL-FLOW] Falló Microsoft Graph, intentando respaldo...`);
   }
 
   // 2. RESPALDO: SendGrid API (Puerto 443)
@@ -153,11 +156,7 @@ const EMAIL_ATTACHMENTS = fs.existsSync(LOGO_PATH) ? [{
 }] : [];
 
 const ADMIN_RECIPIENTS = [
-  "gustavo.velandia@iceberg.com.co",
-  "soporteti@iceberg.com.co",
-  "soporte2@iceberg.com.co",
-  "aprendiz.sistemas@iceberg.com.co",
-  "sistema.tickets@iceberg.com.co"
+  'aprendiz.sistemas@iceberg.com.co'
 ];
 
 transporter.verify((err) => {

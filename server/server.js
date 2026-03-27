@@ -39,14 +39,15 @@ async function getMicrosoftToken() {
   };
   return new Promise((resolve, reject) => {
     const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', d => data += d);
+      let bodyData = '';
+      res.on('data', (d) => { bodyData += d; });
       res.on('end', () => {
-        try {
-          const json = JSON.parse(data);
-          if (json.access_token) resolve(json.access_token);
-          else reject(new Error(json.error_description || 'No access token'));
-        } catch(e) { reject(e); }
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          try { resolve(JSON.parse(bodyData).access_token); } catch (e) { resolve(null); }
+        } else {
+          console.error(`[MS-GRAPH AUTH ERR] ${res.statusCode}: ${bodyData}`);
+          resolve(null);
+        }
       });
     });
     req.on('error', reject);
@@ -76,13 +77,17 @@ async function sendMailMicrosoftGraph(mailOptions) {
     };
     return await new Promise((resolve) => {
       const req = https.request(options, (res) => {
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          console.log(`[MS-GRAPH] ✅ Enviado: ${recipients.join(', ')}`);
-          resolve([{ recipients, success: true }]);
-        } else {
-          console.error(`[MS-GRAPH ERR] Status ${res.statusCode}`);
-          resolve(null);
-        }
+        let resBody = '';
+        res.on('data', (d) => { resBody += d; });
+        res.on('end', () => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            console.log(`[MS-GRAPH] ✅ Enviado: ${recipients.join(', ')}`);
+            resolve([{ recipients, success: true }]);
+          } else {
+            console.error(`[MS-GRAPH ERR] Status ${res.statusCode}: ${resBody}`);
+            resolve(null);
+          }
+        });
       });
       req.on('error', (e) => { console.error(`[MS-GRAPH ERR] ${e.message}`); resolve(null); });
       req.write(data); req.end();

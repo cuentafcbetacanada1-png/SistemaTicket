@@ -1552,13 +1552,14 @@ const APP = {
         mAttach.style.display = 'block';
         mAttachList.innerHTML = atts.map(a => {
           const isImg = a.type && a.type.startsWith('image/');
+          const clickFn = isImg ? `onclick="APP.showLightbox('${a.data}', '${this.esc(a.name)}'); return false;"` : `href="${a.data}" target="_blank"`;
           return `
-            <a href="${a.data}" target="_blank" class="attach-card" style="display:flex; flex-direction:column; background:var(--bg); border:1px solid var(--border); border-radius:10px; overflow:hidden; text-decoration:none; transition:all 0.2s;" onmouseover="this.style.borderColor='var(--primary)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform=''">
+            <a ${clickFn} class="attach-card" style="display:flex; cursor:pointer; flex-direction:column; background:var(--bg); border:1px solid var(--border); border-radius:10px; overflow:hidden; text-decoration:none; transition:all 0.2s;" onmouseover="this.style.borderColor='var(--primary)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform=''">
               ${isImg ? `<img src="${a.data}" style="height:80px; width:100%; object-fit:cover;">` : 
                 `<div style="height:80px; display:flex; align-items:center; justify-content:center; background:var(--primary-light); color:var(--primary);">
                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                  </div>`}
-              <div style="padding:6px 10px; font-size:10px; font-weight:700; color:var(--t1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; border-top:1px solid var(--border);">
+              <div style="padding:6px 10px; font-size:10px; font-weight:700; color:var(--t1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; border-top:1px solid var(--border); background:white;">
                 ${this.esc(a.name)}
               </div>
             </a>
@@ -2036,6 +2037,33 @@ const APP = {
   removeAttachment(index) {
     this.attachments.splice(index, 1);
     this.renderAttachmentList();
+  },
+
+  showLightbox(data, name) {
+    let lb = document.getElementById('lightbox-modal');
+    if (!lb) {
+      lb = document.createElement('div');
+      lb.id = 'lightbox-modal';
+      lb.className = 'modal-bd';
+      lb.style.zIndex = '10000';
+      lb.style.backgroundColor = 'rgba(15, 23, 42, 0.9)';
+      lb.style.backdropFilter = 'blur(8px)';
+      lb.style.cursor = 'zoom-out';
+      lb.onclick = () => { lb.style.display = 'none'; lb.innerHTML = ''; };
+      document.body.appendChild(lb);
+    }
+    lb.style.display = 'flex';
+    lb.style.alignItems = 'center';
+    lb.style.justifyContent = 'center';
+    lb.innerHTML = `
+      <div style="position:relative; max-width:90%; max-height:90%; display:flex; flex-direction:column; align-items:center;">
+        <img src="${data}" style="max-width:100%; max-height:85vh; border-radius:16px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5); border:4px solid white; object-fit:contain; animation: zoomIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
+        <div style="margin-top:20px; color:white; font-weight:700; background:rgba(0,0,0,0.5); padding:8px 20px; border-radius:30px; backdrop-filter:blur(4px); font-size:14px;">${name}</div>
+        <button style="position:absolute; top:-50px; right:0; background:none; border:none; color:white; cursor:pointer; padding:10px;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    `;
   }
 };
 

@@ -25,11 +25,15 @@ const transporter = nodemailer.createTransport({
 });
 
 async function getMicrosoftToken() {
-  const body = `client_id=${process.env.AZURE_CLIENT_ID}&client_secret=${process.env.AZURE_CLIENT_SECRET}&scope=https://graph.microsoft.com/.default&grant_type=client_credentials`;
+  const tenantId = (process.env.AZURE_TENANT_ID || '').trim();
+  const clientId = (process.env.AZURE_CLIENT_ID || '').trim();
+  const clientSecret = (process.env.AZURE_CLIENT_SECRET || '').trim();
+
+  const body = `client_id=${clientId}&client_secret=${clientSecret}&scope=https://graph.microsoft.com/.default&grant_type=client_credentials`;
   const options = {
     hostname: 'login.microsoftonline.com',
     port: 443,
-    path: `/${process.env.AZURE_TENANT_ID}/oauth2/v2.0/token`,
+    path: `/${tenantId}/oauth2/v2.0/token`,
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(body) }
   };
@@ -54,6 +58,7 @@ async function getMicrosoftToken() {
 async function sendMailMicrosoftGraph(mailOptions) {
   try {
     const recipients = Array.isArray(mailOptions.to) ? mailOptions.to : [mailOptions.to];
+    const emailUser = (process.env.EMAIL_USER || '').trim();
     const token = await getMicrosoftToken();
     const data = JSON.stringify({
       message: {
@@ -65,7 +70,7 @@ async function sendMailMicrosoftGraph(mailOptions) {
     const options = {
       hostname: 'graph.microsoft.com',
       port: 443,
-      path: `/v1.0/users/${process.env.EMAIL_USER}/sendMail`,
+      path: `/v1.0/users/${emailUser}/sendMail`,
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) }
     };

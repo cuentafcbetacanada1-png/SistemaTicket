@@ -358,7 +358,15 @@ const APP = {
     this._initialized = true;
 
     const urlParams = new URLSearchParams(window.location.search);
-    this.pendingTicketId = urlParams.get('ticket') || urlParams.get('ticketId');
+    let tid = urlParams.get('ticket') || urlParams.get('ticketId');
+    const hash = window.location.hash;
+    // Si el ID tiene un '#' (por ejemplo 'Ticket #35') y no fue encodeado, el navegador lo divide.
+    // Combinamos tid + hash si detectamos este patrón.
+    if (tid && hash && !tid.includes('#')) {
+      // Si el ID termina en espacio y el hash empieza con # seguido de números, o similar
+      tid = tid.trim() + ' ' + hash;
+    }
+    this.pendingTicketId = tid;
     if (this.pendingTicketId && this.user) this._checkPendingTicket();
   },
 

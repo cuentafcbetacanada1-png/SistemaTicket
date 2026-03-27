@@ -293,7 +293,7 @@ const renderEmail = (t, title, subtitle, badgeText, badgeColor = '#335495', cont
           <td style="padding: 40px;">
             <div style="font-size: 15px; color: #334155; line-height: 1.6; margin-bottom: 30px;">${contentHtml}</div>
             <div style="margin-top: 40px; padding-top: 30px; border-top: 1px solid #f1f5f9; text-align: center;">
-              <a href="https://sistema-tickets.up.railway.app?ticketId=${t.id}" style="background-color: #335495; color: #ffffff; padding: 15px 35px; border-radius: 6px; font-weight: bold; text-decoration: none; display: inline-block; font-size: 14px;">Ir a Gestión de Soporte →</a>
+              <a href="https://sistema-tickets.up.railway.app?ticketId=${encodeURIComponent(t.id)}" style="background-color: #335495; color: #ffffff; padding: 15px 35px; border-radius: 6px; font-weight: bold; text-decoration: none; display: inline-block; font-size: 14px;">Ir a Gestión de Soporte →</a>
             </div>
           </td>
         </tr>
@@ -313,7 +313,7 @@ const getGridTable = (t) => {
                       <div style="border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; box-shadow:0 6px 15px rgba(0,0,0,0.1); background:#ffffff; margin-bottom:8px;">
                         <img src="${a.data}" style="height:180px; width:auto; display:block;" alt="adjunto">
                       </div>
-                      <a href="https://sistema-tickets.up.railway.app?ticketId=${t.id}" style="color:#2563eb; font-size:12px; font-weight:bold; text-decoration:none; background:#f1f5f9; padding:6px 12px; border-radius:20px; border:1px solid #e2e8f0; display:inline-block;">🔍 VER Y AMPLIAR EN PORTAL</a>
+                      <a href="https://sistema-tickets.up.railway.app?ticketId=${encodeURIComponent(t.id)}" style="color:#2563eb; font-size:12px; font-weight:bold; text-decoration:none; background:#f1f5f9; padding:6px 12px; border-radius:20px; border:1px solid #e2e8f0; display:inline-block;">🔍 VER Y AMPLIAR EN PORTAL</a>
                     </div>`;
           }
           return `<div style="display:inline-block; margin-right:8px; margin-top:8px; padding:6px 12px; background:#f1f5f9; border-radius:6px; font-size:11px; color:#475569; border:1px solid #e2e8f0; vertical-align:top;">📎 ${a.name}</div>`;

@@ -288,8 +288,10 @@ const getGridTable = (t) => {
     const attachHtml = t.attachments && t.attachments.length > 0 
       ? t.attachments.map(a => {
           if (a.type && a.type.startsWith('image/')) {
-            return `<div style="display:inline-block; margin-right:8px; margin-top:8px; border:1px solid #e2e8f0; border-radius:6px; overflow:hidden; vertical-align:top;">
-                      <img src="${a.data}" style="height:70px; width:auto; display:block;" alt="adjunto">
+            return `<div style="display:inline-block; margin-right:10px; margin-top:10px; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; vertical-align:top; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+                      <a href="${a.data}" target="_blank" style="display:block; text-decoration:none;">
+                        <img src="${a.data}" style="height:120px; width:auto; display:block;" alt="adjunto">
+                      </a>
                     </div>`;
           }
           return `<div style="display:inline-block; margin-right:8px; margin-top:8px; padding:6px 12px; background:#f1f5f9; border-radius:6px; font-size:11px; color:#475569; border:1px solid #e2e8f0; vertical-align:top;">📎 ${a.name}</div>`;

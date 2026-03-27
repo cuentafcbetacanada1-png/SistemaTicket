@@ -1337,7 +1337,13 @@ const APP = {
       return `
         <tr>
             <td><span class="tid">${t.id}</span></td>
-            <td><div>${this.esc(tTitle)}</div><div style="font-size:10px; color:var(--t3)">${CAT_LABELS[t.category] || t.category || 'Requerimiento'}</div></td>
+            <td>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-weight:600;">${this.esc(tTitle)}</span>
+                ${t.attachments && t.attachments.length > 0 ? `<span style="background:var(--primary-light); color:var(--primary); font-size:10px; padding:2px 6px; border-radius:10px; display:inline-flex; align-items:center; gap:3px; font-weight:800;" title="${t.attachments.length} archivos adjuntos">📎 ${t.attachments.length}</span>` : ''}
+              </div>
+              <div style="font-size:10px; color:var(--t3); margin-top:2px;">${CAT_LABELS[t.category] || t.category || 'Requerimiento'}</div>
+            </td>
             <td><div>${this.esc(tUser)}</div><div style="font-size:10px; color:var(--t3)">${tArea}</div></td>
             <td>${this.statusBadge(t.status)}</td>
             <td>${this.priorityBadge(t.priority)}</td>
@@ -2045,22 +2051,28 @@ const APP = {
       lb = document.createElement('div');
       lb.id = 'lightbox-modal';
       lb.className = 'modal-bd';
-      lb.style.zIndex = '10000';
-      lb.style.backgroundColor = 'rgba(15, 23, 42, 0.9)';
-      lb.style.backdropFilter = 'blur(8px)';
-      lb.style.cursor = 'zoom-out';
-      lb.onclick = () => { lb.style.display = 'none'; lb.innerHTML = ''; };
+      lb.style.cssText = `
+        position:fixed; top:0; left:0; width:100%; height:100%; 
+        background:rgba(15,23,42,0.95); z-index:10000; display:none; 
+        align-items:center; justify-content:center; backdrop-filter:blur(10px);
+        transition:all 0.3s ease; cursor:zoom-out;
+      `;
+      lb.onclick = (e) => { if(e.target === lb || e.target.closest('button')) { lb.style.opacity='0'; setTimeout(()=>{lb.style.display='none'; lb.innerHTML=''}, 200); } };
       document.body.appendChild(lb);
     }
     lb.style.display = 'flex';
-    lb.style.alignItems = 'center';
-    lb.style.justifyContent = 'center';
+    lb.style.opacity = '0';
+    setTimeout(() => lb.style.opacity = '1', 10);
+    
     lb.innerHTML = `
-      <div style="position:relative; max-width:90%; max-height:90%; display:flex; flex-direction:column; align-items:center;">
-        <img src="${data}" style="max-width:100%; max-height:85vh; border-radius:16px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5); border:4px solid white; object-fit:contain; animation: zoomIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
-        <div style="margin-top:20px; color:white; font-weight:700; background:rgba(0,0,0,0.5); padding:8px 20px; border-radius:30px; backdrop-filter:blur(4px); font-size:14px;">${name}</div>
-        <button style="position:absolute; top:-50px; right:0; background:none; border:none; color:white; cursor:pointer; padding:10px;">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      <div style="position:relative; max-width:95%; max-height:95%; display:flex; flex-direction:column; align-items:center; animation:zoomIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);">
+        <img src="${data}" style="max-width:100%; max-height:80vh; border-radius:12px; border:4px solid white; box-shadow:0 0 50px rgba(0,0,0,0.5); object-fit:contain;">
+        <div style="margin-top:20px; color:white; display:flex; gap:10px; align-items:center;">
+          <span style="font-weight:700; background:rgba(255,255,255,0.1); padding:8px 20px; border-radius:30px; border:1px solid rgba(255,255,255,0.2);">${name}</span>
+          <a href="${data}" target="_blank" download="${name}" style="background:var(--primary); color:white; text-decoration:none; padding:8px 20px; border-radius:30px; font-weight:700; font-size:13px; box-shadow:0 4px 12px var(--shadow);">Ver Tamaño Real / Descargar</a>
+        </div>
+        <button style="position:absolute; top:-60px; right:0; background:rgba(255,255,255,0.1); border:none; color:white; cursor:pointer; width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
     `;

@@ -309,13 +309,11 @@ const getGridTable = (t) => {
     const attachHtml = t.attachments && t.attachments.length > 0 
       ? t.attachments.map(a => {
           if (a.type && a.type.startsWith('image/')) {
-            return `<div style="display:inline-block; margin-right:12px; margin-top:12px; vertical-align:top; text-align:center;">
-                      <div style="border:1px solid #e2e8f0; border-radius:10px; overflow:hidden; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1); background:#ffffff; margin-bottom:6px;">
-                        <a href="${a.data}" target="_blank" style="display:block; text-decoration:none;">
-                          <img src="${a.data}" style="height:140px; width:auto; display:block;" alt="adjunto">
-                        </a>
+            return `<div style="display:inline-block; margin-right:15px; margin-top:15px; vertical-align:top; text-align:center;">
+                      <div style="border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; box-shadow:0 6px 15px rgba(0,0,0,0.1); background:#ffffff; margin-bottom:8px;">
+                        <img src="${a.data}" style="height:180px; width:auto; display:block;" alt="adjunto">
                       </div>
-                      <a href="${a.data}" target="_blank" style="color:#335495; font-size:10px; font-weight:bold; text-decoration:underline;">🔍 AMPLIAR IMAGEN</a>
+                      <a href="https://sistema-tickets.up.railway.app?ticketId=${t.id}" style="color:#2563eb; font-size:12px; font-weight:bold; text-decoration:none; background:#f1f5f9; padding:6px 12px; border-radius:20px; border:1px solid #e2e8f0; display:inline-block;">🔍 VER Y AMPLIAR EN PORTAL</a>
                     </div>`;
           }
           return `<div style="display:inline-block; margin-right:8px; margin-top:8px; padding:6px 12px; background:#f1f5f9; border-radius:6px; font-size:11px; color:#475569; border:1px solid #e2e8f0; vertical-align:top;">📎 ${a.name}</div>`;
@@ -401,7 +399,14 @@ app.post('/tickets', async (req, res) => {
       subject: `Solicitud #${t.id} de IT Portal`,
       html: renderEmail(t, `Nueva solicitud técnica`, `NOTIFICACIÓN TI`, `NUEVA`, '#335495',
         `<p>Se ha registrado un caso con ID <strong>${t.id}</strong>.</p>${getGridTable(t)}`),
-      attachments: EMAIL_ATTACHMENTS
+      attachments: [
+        ...EMAIL_ATTACHMENTS,
+        ...(t.attachments || []).map(a => ({
+          filename: a.name,
+          data: a.data,
+          type: a.type
+        }))
+      ]
     };
     sendMailResilient(adminMail).catch(e => console.error('[ADM-MAIL-ERR]', e.message));
 

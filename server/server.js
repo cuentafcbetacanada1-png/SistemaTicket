@@ -284,7 +284,19 @@ const renderEmail = (t, title, subtitle, badgeText, badgeColor = '#335495', cont
       </table>
     </div>`;
 
-const getGridTable = (t) => `
+const getGridTable = (t) => {
+    const attachHtml = t.attachments && t.attachments.length > 0 
+      ? t.attachments.map(a => {
+          if (a.type && a.type.startsWith('image/')) {
+            return `<div style="display:inline-block; margin-right:8px; margin-top:8px; border:1px solid #e2e8f0; border-radius:6px; overflow:hidden; vertical-align:top;">
+                      <img src="${a.data}" style="height:70px; width:auto; display:block;" alt="adjunto">
+                    </div>`;
+          }
+          return `<div style="display:inline-block; margin-right:8px; margin-top:8px; padding:6px 12px; background:#f1f5f9; border-radius:6px; font-size:11px; color:#475569; border:1px solid #e2e8f0; vertical-align:top;">📎 ${a.name}</div>`;
+        }).join('')
+      : '<span style="color:#94a3b8; font-style:italic;">Sin archivos</span>';
+
+    return `
     <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #e2e8f0; border-radius: 8px; border-collapse: separate; font-size: 13px; overflow: hidden;">
       <tr>
         <td width="55%" style="padding: 15px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; background-color: #fafafa;">
@@ -312,11 +324,10 @@ const getGridTable = (t) => `
       <div style="background-color: #f8fafc; padding: 20px; border-radius: 6px; color: #334155; border-left: 4px solid #335495; font-size: 14px;">${t.description || 'Sin descripción'}</div>
     </div>
     <div style="margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 15px;">
-      <div style="font-size: 9px; color: #94a3b8; font-weight: bold; text-transform: uppercase; margin-bottom: 4px;">Adjuntos</div>
-      <div style="font-weight: bold; color: #335495;">
-        ${t.attachments && t.attachments.length > 0 ? `📎 ${t.attachments.length} archivo(s) adjunto(s) (Ver en Portal)` : 'Sin archivos'}
-      </div>
+      <div style="font-size: 9px; color: #94a3b8; font-weight: bold; text-transform: uppercase; margin-bottom: 8px;">Evidencias Adjuntas</div>
+      <div style="line-height: 0;">${attachHtml}</div>
     </div>`;
+};
 
 app.post('/tickets', async (req, res) => {
   try {

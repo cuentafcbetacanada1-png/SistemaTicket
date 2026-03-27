@@ -2,7 +2,6 @@
 const fs = require('fs');
 const path = require('path');
 
-// RUTAS DE ARCHIVOS (server/data/)
 const DATA_DIR = path.join(__dirname, 'data');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
@@ -12,7 +11,6 @@ const PATHS = {
   audit:         path.join(DATA_DIR, 'audit.json')
 };
 
-// HELPER: Lectura/Escritura Segura
 function readJSON(file) {
   try {
     if (!fs.existsSync(file)) return [];
@@ -27,16 +25,14 @@ function writeJSON(file, data) {
   } catch (e) { console.error(`[DB-WRITE-ERR] ${file}:`, e.message); return false; }
 }
 
-// INICIALIZACIÓN: Asegurar que los archivos existan
 Object.values(PATHS).forEach(p => { if (!fs.existsSync(p)) writeJSON(p, []); });
 
 console.log('✅ [DB] Modo Local JSON Activo | Persistencia en server/data/');
 
 module.exports = {
-  isConnected: () => true, // Siempre conectado en modo local
+  isConnected: () => true,
   isBackup: ()    => false,
 
-  // ======= TICKETS =======
   async getAll() {
     return readJSON(PATHS.tickets).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   },
@@ -74,7 +70,6 @@ module.exports = {
     writeJSON(PATHS.tickets, []);
   },
 
-  // ======= NOTIFICACIONES =======
   async getNotifications(limit = 50) {
     return readJSON(PATHS.notifications)
       .sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0))
@@ -106,14 +101,12 @@ module.exports = {
     return nuovo;
   },
 
-  // ======= AUDIT =======
   async addAuditLog(actor, action, targetId, details = '') {
     const all = readJSON(PATHS.audit);
     all.push({ 
       actor, action, targetId, details, 
       timestamp: new Date().toISOString() 
     });
-    // Limitar logs de auditoría a los últimos 1000 para no inflar el JSON
     if (all.length > 1000) all.shift();
     writeJSON(PATHS.audit, all);
   },

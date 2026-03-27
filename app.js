@@ -75,12 +75,9 @@ const Store = {
   saveLocalNotifications(n) { localStorage.setItem('ice_local_notifications', JSON.stringify(n)); }
 };
 
-// Detector de Servidor: Si el archivo se abre localmente (file://), intentamos conectar al dominio de Railway
 const IS_LOCAL_FILE = window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const PROD_URL = 'https://sistema-tickets.up.railway.app';
-// Inteligencia de URL: Si estamos en file:// buscamos primero un servidor local en el puerto 3000.
 let API_URL_VAR = (window.location.protocol === 'http:' || window.location.protocol === 'https:') ? window.location.origin : 'http://localhost:3000';
-// Fallback a producción solo si no es local file o si falla (opcional, por ahora forzamos local)
 let API_URL = window.location.origin;
 try {
     const override = localStorage.getItem('ice_api_override');
@@ -143,7 +140,6 @@ const API = {
       if (r.ok) {
         const d = await r.json();
         const tickets = d || [];
-        // REGLA DE ORO: Solo sobreescribir si la lista no está vacía o si el backup es viejo
         if (tickets.length > 0) {
           Store.saveLocal(tickets);
         }
@@ -276,7 +272,6 @@ const APP = {
       this._syncInterval = setInterval(async () => {
         if (this.user) {
           const wasUp = API._up !== false;
-          // Si el servidor o la BD están caídos, intentamos reconectar
           if (API._up === false || API._dbConnected === false) await API.checkHealth();
 
           const isUp = API._up !== false;
@@ -469,7 +464,7 @@ const APP = {
         body: JSON.stringify({
           email,
           name,
-          role: 'admin', // Guaranteed admin at this point
+          role: 'admin',
           id: resp.account.localAccountId || resp.account.homeAccountId
         })
       });
@@ -879,7 +874,6 @@ const APP = {
     const uid = this.user?.id;
     const umail = this.user?.email?.toLowerCase();
 
-    // Sincronizado con renderMyTickets para evitar discrepancias
     const mine = tlist.filter(t => {
       if (!t.createdBy || !this.user) return false;
       if (t.status === 'cerrado') return false;
@@ -972,13 +966,10 @@ const APP = {
     const form = document.getElementById('form-ticket');
     if (form) form.reset();
 
-    // Reset area to default so user must choose
     const areaSelect = document.getElementById('t-area');
     if (areaSelect) {
       areaSelect.value = '';
     }
-
-    // Bind category card clicks — works with BOTH old and new HTML structures
     const priorityMap = {
       'red-conectividad': 'critica', 'falla-software': 'alta',
       'acceso-permisos': 'media', 'reparacion': 'media',
@@ -995,19 +986,35 @@ const APP = {
         this.selectedCategory = cat;
         if (catInput) catInput.value = cat;
 
-        // Auto-fill title
         const titleInput = document.getElementById('t-title');
         if (titleInput && (!titleInput.value || Object.values(CAT_LABELS).includes(titleInput.value))) {
           titleInput.value = CAT_LABELS[cat] || '';
         }
 
-        // Auto-set priority
         const prioritySelect = document.getElementById('t-priority');
         if (prioritySelect) prioritySelect.value = priorityMap[cat] || 'baja';
       };
     });
 
     if (form) {
+      this.attachments = [];
+      const attachList = document.getElementById('attachment-list');
+      if (attachList) attachList.innerHTML = '';
+      
+      const az = document.getElementById('attachment-zone');
+      const ai = document.getElementById('t-attachments');
+      if (az && ai) {
+        az.onclick = () => ai.click();
+        ai.onchange = (e) => this.handleFiles(e.target.files);
+        az.ondragover = (e) => { e.preventDefault(); az.classList.add('dragging'); };
+        az.ondragleave = () => { az.classList.remove('dragging'); };
+        az.ondrop = (e) => {
+          e.preventDefault();
+          az.classList.remove('dragging');
+          if (e.dataTransfer.files) this.handleFiles(e.dataTransfer.files);
+        };
+      }
+
       form.onsubmit = (e) => {
         e.preventDefault();
         this.submitTicket();
@@ -1022,7 +1029,6 @@ const APP = {
     const priority = document.getElementById('t-priority').value;
     const area = document.getElementById('t-area').value;
 
-    // Hide previous errors
     ['err-title', 'err-desc', 'err-area'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';
@@ -1065,7 +1071,8 @@ const APP = {
       phone: document.getElementById('t-phone').value.trim(),
       assignedTo: 'Sin asignar',
       createdBy: { id: this.user.id, name: this.user.name, email: this.user.email },
-      notes: [], createdAt: now, updatedAt: now,
+      notes: [], attachments: this.attachments || [],
+      createdAt: now, updatedAt: now,
     };
 
     try {
@@ -1073,7 +1080,6 @@ const APP = {
         method: 'POST', body: JSON.stringify(ticket)
       }).then(r => r.json());
 
-      // REFUERZO: Si el servidor responde bien, actualizamos el backup
       this.tickets = await API.getTickets();
       if (this.tickets && this.tickets.length > 0) {
         Store.saveLocal(this.tickets);
@@ -1083,7 +1089,6 @@ const APP = {
       this.nav('my-tickets');
     } catch (err) {
       console.error('Error al enviar:', err);
-      // RECURSO LOCAL: Si falla la red, guardamos en el navegador
       const local = Store.getLocalTickets();
       ticket.localOnly = true;
       Store.saveLocal([ticket, ...local]);
@@ -1092,7 +1097,6 @@ const APP = {
         ? 'Error de Red: No se pudo conectar al servidor de Railway desde este archivo local.'
         : 'Error de Red: El servidor no responde o tu conexión es inestable.', 'error');
 
-      // Notificación Local
       this.addLocalNotification({
         id: `local-${Date.now()}`,
         title: 'Ticket Guardado (Offline)',
@@ -1116,12 +1120,10 @@ const APP = {
     const uid = this.user?.id;
     const umail = this.user?.email?.toLowerCase();
 
-    // Filtro ultra-permisivo para asegurar que veas tus tickets
     let list = tlist.filter(t => {
       if (!t.createdBy || !this.user) return false;
       const t_uid = t.createdBy.id;
       const t_umail = (t.createdBy.email || t.createdBy.username || '').toLowerCase();
-      // Si el ID coincide O el correo coincide, es tuyo.
       return (t_uid === uid) || (t_umail && umail && (t_umail === umail || umail.includes(t_umail) || t_umail.includes(umail)));
     });
 
@@ -1212,7 +1214,6 @@ const APP = {
     const res = all.filter(t => t.status === 'resuelto' || t.status === 'cerrado').length;
     const crit = all.filter(t => t.priority === 'critica' && t.status !== 'cerrado').length;
 
-    // Advanced metrics
     const now = Date.now();
     const weekAgo = now - (7 * 24 * 60 * 60 * 1000);
     const thisWeek = all.filter(t => new Date(t.createdAt) >= weekAgo).length;
@@ -1296,7 +1297,6 @@ const APP = {
             </div>`).join('') || '<p style="text-align:center; padding:20px; color:var(--t3)">Sin tickets críticos.</p>';
     }
 
-    // Alerta de modo offline
     const dashNotice = document.getElementById('admin-dash-notice');
     if (dashNotice) {
       if (!API._up) {
@@ -1397,7 +1397,6 @@ const APP = {
     const box = document.getElementById('admin-emails-list');
     if (!box) return;
     try {
-      // Direct fetch from API
       const resp = await API._fetch('/admin/emails');
       const emails = await resp.json();
 
@@ -1501,7 +1500,6 @@ const APP = {
   },
 
   bindModal() {
-    // Main ticket modal
     const modalTicket = document.getElementById('modal-ticket');
     if (modalTicket) {
       modalTicket.addEventListener('click', e => {
@@ -1509,7 +1507,6 @@ const APP = {
       });
     }
 
-    // Delete confirm modal wiring
     const delCancel = document.getElementById('delete-cancel-btn');
     if (delCancel) delCancel.onclick = () => {
       document.getElementById('delete-confirm-modal').style.display = 'none';
@@ -1530,7 +1527,6 @@ const APP = {
     this.openTicketId = id;
     const isAdmin = this.user.role === 'admin';
 
-    // Populate static fields
     const mId = document.getElementById('m-id-pill');
     const mTitle = document.getElementById('m-title');
     const mDesc = document.getElementById('m-desc');
@@ -1547,8 +1543,32 @@ const APP = {
     if (mStatusBox) mStatusBox.innerHTML = this.statusBadge(t.status);
     if (mPriorityBox) mPriorityBox.innerHTML = this.priorityBadge(t.priority);
     if (mUserBox) mUserBox.textContent = `${t.createdBy.name} (${t.area})`;
+    
+    const mAttach = document.getElementById('m-attachments');
+    const mAttachList = document.getElementById('m-attach-list');
+    if (mAttach && mAttachList) {
+      const atts = t.attachments || [];
+      if (atts.length > 0) {
+        mAttach.style.display = 'block';
+        mAttachList.innerHTML = atts.map(a => {
+          const isImg = a.type && a.type.startsWith('image/');
+          return `
+            <a href="${a.data}" target="_blank" class="attach-card" style="display:flex; flex-direction:column; background:var(--bg); border:1px solid var(--border); border-radius:10px; overflow:hidden; text-decoration:none; transition:all 0.2s;" onmouseover="this.style.borderColor='var(--primary)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform=''">
+              ${isImg ? `<img src="${a.data}" style="height:80px; width:100%; object-fit:cover;">` : 
+                `<div style="height:80px; display:flex; align-items:center; justify-content:center; background:var(--primary-light); color:var(--primary);">
+                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                 </div>`}
+              <div style="padding:6px 10px; font-size:10px; font-weight:700; color:var(--t1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; border-top:1px solid var(--border);">
+                ${this.esc(a.name)}
+              </div>
+            </a>
+          `;
+        }).join('');
+      } else {
+        mAttach.style.display = 'none';
+      }
+    }
 
-    // Assignment Logic
     if (mAssignBox) {
       if (isAdmin) {
         mAssignBox.innerHTML = `
@@ -1565,7 +1585,6 @@ const APP = {
       }
     }
 
-    // Notes List
     if (mNotesList) {
       mNotesList.innerHTML = (t.notes || []).map(n => `
         <div class="note-card" style="padding:16px; background:white; border:1px solid var(--border); border-radius:12px; box-shadow:var(--sh-sm);">
@@ -1578,7 +1597,6 @@ const APP = {
       `).join('') || `<div style="padding:20px; text-align:center; color:var(--t3); border:1px dashed var(--border); border-radius:12px;">No hay actividad registrada aún.</div>`;
     }
 
-    // Footer Actions
     if (mFooter) {
       if (isAdmin) {
         mFooter.innerHTML = `
@@ -1669,7 +1687,6 @@ const APP = {
       const q = inp.value.toLowerCase().trim();
       if (!this.user) return;
 
-      // If we are on a view that has a ticket list, re-render it
       if (this.currentView === 'dashboard' || this.currentView === 'my-tickets' || this.currentView === 'admin-tickets') {
         this.renderView(this.currentView);
       }
@@ -1848,7 +1865,6 @@ const APP = {
   addLocalNotification(n) {
     const local = Store.getLocalNotifications();
     local.unshift({ ...n, read: false });
-    // Mantener solo los últimos 20
     Store.saveLocalNotifications(local.slice(0, 20));
     this.fetchNotifications();
   },
@@ -1950,6 +1966,76 @@ const APP = {
       localStorage.setItem('ice_api_override', n);
       window.location.reload();
     }
+  },
+
+  async handleFiles(files) {
+    if (!files || !files.length) return;
+    const current = this.attachments || [];
+    if (current.length + files.length > 3) {
+      this.showToast('⚠️ Máximo 3 archivos por ticket.', 'warning');
+      return;
+    }
+
+    for (const file of files) {
+      if (file.size > 2 * 1024 * 1024) {
+        this.showToast(`⚠️ "${file.name}" excede los 2MB.`, 'warning');
+        continue;
+      }
+      const exists = current.some(a => a.name === file.name && a.size === file.size);
+      if (exists) continue;
+
+      try {
+        const base64 = await this.toBase64(file);
+        this.attachments.push({
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          data: base64
+        });
+      } catch (e) {
+        console.error('Error base64:', e);
+        this.showToast(`❌ Error al procesar "${file.name}"`, 'error');
+      }
+    }
+    this.renderAttachmentList();
+  },
+
+  toBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+    });
+  },
+
+  renderAttachmentList() {
+    const list = document.getElementById('attachment-list');
+    if (!list) return;
+    list.innerHTML = this.attachments.map((a, i) => {
+      const isImg = a.type.startsWith('image/');
+      const icon = isImg ? `<img src="${a.data}" class="attach-thumb">` : 
+                   `<div class="attach-thumb" style="display:flex;align-items:center;justify-content:center;color:var(--primary)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    </div>`;
+      return `
+        <div class="attach-item">
+          ${icon}
+          <div class="attach-info">
+            <span class="attach-name">${this.esc(a.name)}</span>
+            <span class="attach-meta">${(a.size/1024).toFixed(1)} KB</span>
+          </div>
+          <button type="button" class="btn-remove-attach" onclick="APP.removeAttachment(${i})">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </div>
+      `;
+    }).join('');
+  },
+
+  removeAttachment(index) {
+    this.attachments.splice(index, 1);
+    this.renderAttachmentList();
   }
 };
 
@@ -1957,7 +2043,6 @@ const APP = {
 window.APP = APP;
 document.addEventListener('DOMContentLoaded', () => {
   APP.init().then(() => {
-    // La vinculación se hace ahora en startApp para que sea inmediata tras login
   });
 });
 

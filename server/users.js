@@ -3,15 +3,9 @@ const xlsx = require('xlsx');
 const path = require('path');
 const fs   = require('fs');
 
-// =====================================================================
-// USUARIOS: Se leen ÚNICAMENTE del Excel en memoria al arrancar.
-// MongoDB NO se usa para usuarios.
-// =====================================================================
-
 const EXCEL_PATH = path.join(__dirname, 'data', 'CorreosIceberg 2026.xlsx');
 const ADMIN_EMAILS_PATH = path.join(__dirname, 'data', 'authorized_admins.json');
 
-// Admins con contraseña (4 administradores del equipo IT)
 const ADMIN_SEEDS = [
   { id: 'aprendiz.sistemas',  name: 'Juan Ducuara',     email: 'aprendiz.sistemas@iceberg.com.co', role: 'admin', empresa: 'Transportes Iceberg', password: 'Pdr48159',      active: true },
   { id: 'soporte2',           name: 'Stiven Arevalo',   email: 'soporte2@iceberg.com.co',           role: 'admin', empresa: 'Transportes Iceberg', password: 'Sda48159',      active: true },
@@ -19,8 +13,7 @@ const ADMIN_SEEDS = [
   { id: 'gustavo.velandia',   name: 'Gustavo Velandia', email: 'gustavo.velandia@iceberg.com.co',   role: 'admin', empresa: 'Transportes Iceberg', password: 'RA7ha?h=KET5', active: true },
 ];
 
-// ---- Cargar y parsear el Excel ----
-let ALL_USERS = []; // Array de {id, name, email, role, empresa, active, password}
+let ALL_USERS = [];
 
 function loadExcel() {
   try {
@@ -47,9 +40,8 @@ function loadExcel() {
           password: null
         };
       })
-      .filter(u => u && !adminEmails.has(u.email)); // excluir admins (ya están en ADMIN_SEEDS)
+      .filter(u => u && !adminEmails.has(u.email));
 
-    // Agregar admins al principio
     ALL_USERS = [...ADMIN_SEEDS, ...ALL_USERS];
     console.log(`[USERS] ✅ ${ALL_USERS.length} usuarios cargados desde Excel (${ADMIN_SEEDS.length} admins + ${ALL_USERS.length - ADMIN_SEEDS.length} corporativos).`);
   } catch (e) {
@@ -58,9 +50,8 @@ function loadExcel() {
   }
 }
 
-loadExcel(); // Ejecutar al arrancar el servidor
+loadExcel();
 
-// ---- Lista de administradores autorizados (para login Microsoft) ----
 let IT_MASTERS = ADMIN_SEEDS.map(a => a.email);
 try {
   if (fs.existsSync(ADMIN_EMAILS_PATH)) {
@@ -69,12 +60,8 @@ try {
   }
 } catch (e) { }
 
-// =====================================================================
-// API de Usuarios (todo en memoria, sin MongoDB)
-// =====================================================================
 class Users {
 
-  // Inicialización (no necesita hacer nada con la BD para usuarios)
   static async initialize() {
     console.log('[USERS] ✅ Sistema de usuarios listo (modo Excel).');
   }
@@ -86,15 +73,13 @@ class Users {
   }
 
   static async create({ email, name, role }) {
-    // Los usuarios ya están en el Excel — solo devolvemos el existente o uno temporal
     const existing = await Users.getByEmail(email);
     if (existing) return existing;
-    // Usuario temporal en memoria (no se persiste, solo para la sesión)
     return { id: email.split('@')[0], name: name || email.split('@')[0], email: email.toLowerCase(), role: role || 'user', empresa: 'General', active: true };
   }
 
   static async getAll() {
-    return ALL_USERS.map(({ password: _pw, ...u }) => u); // Ocultar contraseñas
+    return ALL_USERS.map(({ password: _pw, ...u }) => u);
   }
 
   static async count() {
@@ -118,9 +103,7 @@ class Users {
   static isCorporate(email) {
     if (!email) return false;
     const low = email.toLowerCase().trim();
-    // Buscar en el Excel primero
     if (ALL_USERS.some(u => u.email === low)) return true;
-    // Fallback por dominio
     return (
       low.endsWith('@iceberg.com.co') ||
       low.endsWith('@gezpomotor.com') ||

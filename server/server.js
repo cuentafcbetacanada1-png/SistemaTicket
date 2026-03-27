@@ -12,7 +12,6 @@ const Users = require('./users');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Outlook Transporter Only
 const transporter = nodemailer.createTransport({
   host: 'smtp.office365.com',
   port: 587,
@@ -101,7 +100,6 @@ async function sendMailResilient(mailOptions) {
   const recipients = Array.isArray(mailOptions.to) ? mailOptions.to : [mailOptions.to];
   console.log(`[MAIL-FLOW] Iniciando envío para: ${recipients.join(', ')}`);
   
-  // 1. SOLUCIÓN LIMPIA: Microsoft Graph API (Oficial Azure)
   if (process.env.AZURE_CLIENT_SECRET) {
     console.log(`[MAIL-FLOW] Intentando vía Microsoft Graph API...`);
     const result = await sendMailMicrosoftGraph(mailOptions);
@@ -109,7 +107,6 @@ async function sendMailResilient(mailOptions) {
     console.warn(`[MAIL-FLOW] Falló Microsoft Graph, intentando respaldo...`);
   }
 
-  // 2. RESPALDO: SendGrid API (Puerto 443)
   if (process.env.SENDGRID_API_KEY) {
     const data = JSON.stringify({
       personalizations: [{ to: recipients.map(email => ({ email: email.trim() })) }],
@@ -173,28 +170,24 @@ transporter.verify((err) => {
   else console.log('[SMTP READY] ✅ Conectado a Office365.');
 });
 
-// BACKUP DIR — definido aquí para que esté disponible en todas las rutas
 const BACKUP_DIR = path.join(__dirname, 'backups');
 if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
-// Middleware de Seguridad (Asegurando acceso al Portal mientras se protegen los componentes)
-app.use((req, res, next) => {
+app.use((req, res, next)   => {
   const ext = path.extname(req.path).toLowerCase();
   const sensitiveFiles = ['.env', '.gitignore', '.vscode', '.git', '.json', '.txt'];
   const sourceFiles = ['.js', '.css', '.html'];
   const emailLow = (req.path || '').toLowerCase();
 
-  // 1. Bloqueo estricto de archivos sensibles
   if (sensitiveFiles.includes(ext) || emailLow.includes('/package.json') || emailLow.includes('/.env') || emailLow.includes('/.git')) {
     if (req.path !== '/health' && req.path !== '/') {
       return res.status(403).json({ error: 'System policy: Restricted access' });
     }
   }
 
-  // 2. Bloqueo de acceso directo a archivos fuente (excepto root)
   if (sourceFiles.includes(ext)) {
     const isDirectNav = req.headers['sec-fetch-dest'] === 'document' || 
                         req.headers['sec-fetch-mode'] === 'navigate' ||
@@ -236,7 +229,6 @@ app.use((req, res, next) => {
 
 app.use(express.static(path.join(__dirname, '..')));
 
-// VERSIÓN CORRECTA: Modo LocalJSON (No volver a poner MongoDB)
 app.get('/health', (req, res) => res.json({ 
   status: 'ok', 
   stable: true, 
@@ -318,20 +310,24 @@ const getGridTable = (t) => `
     <div style="margin-top: 25px;">
       <div style="font-size: 9px; color: #94a3b8; font-weight: bold; text-transform: uppercase; margin-bottom: 8px;">Mensaje Detallado</div>
       <div style="background-color: #f8fafc; padding: 20px; border-radius: 6px; color: #334155; border-left: 4px solid #335495; font-size: 14px;">${t.description || 'Sin descripción'}</div>
+    </div>
+    <div style="margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 15px;">
+      <div style="font-size: 9px; color: #94a3b8; font-weight: bold; text-transform: uppercase; margin-bottom: 4px;">Adjuntos</div>
+      <div style="font-weight: bold; color: #335495;">
+        ${t.attachments && t.attachments.length > 0 ? `📎 ${t.attachments.length} archivo(s) adjunto(s) (Ver en Portal)` : 'Sin archivos'}
+      </div>
     </div>`;
 
 app.post('/tickets', async (req, res) => {
   try {
     const actor = req.headers['iceberg-user'] || 'Usuario Portal';
 
-    // Resolución de nombre real desde el sistema de usuarios si es posible
     let realName = actor;
     try {
       const uInfo = Users.getByEmail(actor);
       if (uInfo && uInfo.name) realName = uInfo.name;
     } catch(e) {}
 
-    // Resolver createdBy: usar el del body si viene bien, sino reconstruir desde el actor
     let createdBy = req.body.createdBy;
     if (!createdBy || !createdBy.name || createdBy.name === 'Sistema' || createdBy.name === 'Usuario Corporativo') {
       createdBy = {
@@ -357,14 +353,12 @@ app.post('/tickets', async (req, res) => {
     const t = await db.create(tData);
     await db.addAuditLog(actor, 'CREAR_TICKET', t.id, `Ticket "${t.title}" reportado por ${t.createdBy.name}`);
 
-    // Notificación interna (campana)
     await createNotification(
       `Nuevo Ticket: ${t.id}`,
       `${t.createdBy.name} ha reportado: ${t.title}`,
-      t.id, 'admin', 'info' // Solo administradores ven nuevos tickets inicialmente
+      t.id, 'admin', 'info' 
     );
 
-    // Correo al administrador principal
     const adminMail = {
       to: ADMIN_RECIPIENTS,
       subject: `Solicitud #${t.id} de IT Portal`,
@@ -399,7 +393,6 @@ app.put('/tickets/:id', async (req, res) => {
       const isAssignChange = old.assignedTo !== updated.assignedTo;
       const statusLabel = { 'abierto': 'ABIERTO', 'en-progreso': 'EN PROGRESO', 'resuelto': 'RESUELTO', 'cerrado': 'CERRADO' }[updated.status] || updated.status.toUpperCase();
 
-      // 2. DIFUSIÓN AL ADMINISTRADOR (Asignación, Proceso o Cierre)
       const broadcastMail = {
         to: ADMIN_RECIPIENTS,
         subject: isAssignChange ? `🛠️ Asignación: #${updated.id}` : `📢 Cambio de Estado: #${updated.id} → ${statusLabel}`,
@@ -600,20 +593,12 @@ app.post('/auth/sync-microsoft', async (req, res) => {
 app.get('/notifications', async (req, res) => {
   try {
     const userEmail = (req.headers['iceberg-user'] || '').toLowerCase().trim();
-    // console.log(`[NOTIF-FETCH] User: ${userEmail || 'ANONYMOUS'}`);
     
-    // Si no hay usuario, devolver nada por seguridad
     if (!userEmail) return res.json([]);
-
-    // Determinar si es admin
     const isAdmin = Users.isMasterAdmin(userEmail) || Users.getAdminEmails().includes(userEmail);
 
     const all = await db.getNotifications(50);
 
-    // Filtrar:
-    // 1. Notificaciones para 'all' (conectividad, etc)
-    // 2. Notificaciones para 'admin' (si el usuario es admin)
-    // 3. Notificaciones específicas para este email
     const filtered = all.filter(n => {
       if (n.userId === 'all') return true;
       if (n.userId === 'admin' && isAdmin) return true;
@@ -666,10 +651,8 @@ app.get('*', (req, res) => {
 
 const server = app.listen(PORT, () => {
   console.log(`[ICEBERG] ✅ ONLINE | PUERTO: ${PORT} | V: 9.7 (Resilient)`);
-  // Inicialización asíncrona sin bloquear el inicio
   Users.initialize().catch(() => { });
-  
-  // Verificación de transporters en segundo plano
+
   setTimeout(() => {
     transporter.verify((err) => {
       if (err) console.error('[OUTLOOK STATUS] Offline (Port 587 Blocked?)');

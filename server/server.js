@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const https = require('https');
 const db = require('./db');
 const nodemailer = require('nodemailer');
 const Users = require('./users');
@@ -11,23 +12,133 @@ const Users = require('./users');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Outlook Transporter Only
 const transporter = nodemailer.createTransport({
   host: 'smtp.office365.com',
   port: 587,
-  secure: false, // STARTTLS
+  secure: false,
   auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-  connectionTimeout: 15000, 
-  greetingTimeout: 5000,
-  socketTimeout: 30000,
-  pool: true, 
-  maxConnections: 3,
-  maxMessages: 50,
-  tls: { 
-    rejectUnauthorized: false
-  }
+  connectionTimeout: 10000, 
+  tls: { rejectUnauthorized: true }
 }, {
-  from: '"Iceberg Support" <sistema.tickets@iceberg.com.co>'
+  from: `"Iceberg Support" <${process.env.EMAIL_USER}>`
 });
+
+async function getMicrosoftToken() {
+  const body = `client_id=${process.env.AZURE_CLIENT_ID}&client_secret=${process.env.AZURE_CLIENT_SECRET}&scope=https://graph.microsoft.com/.default&grant_type=client_credentials`;
+  const options = {
+    hostname: 'login.microsoftonline.com',
+    port: 443,
+    path: `/${process.env.AZURE_TENANT_ID}/oauth2/v2.0/token`,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(body) }
+  };
+  return new Promise((resolve, reject) => {
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', d => data += d);
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          if (json.access_token) resolve(json.access_token);
+          else reject(new Error(json.error_description || 'No access token'));
+        } catch(e) { reject(e); }
+      });
+    });
+    req.on('error', reject);
+    req.write(body);
+    req.end();
+  });
+}
+
+async function sendMailMicrosoftGraph(mailOptions) {
+  try {
+    const recipients = Array.isArray(mailOptions.to) ? mailOptions.to : [mailOptions.to];
+    const token = await getMicrosoftToken();
+    const data = JSON.stringify({
+      message: {
+        subject: mailOptions.subject,
+        body: { contentType: 'HTML', content: mailOptions.html },
+        toRecipients: recipients.map(e => ({ emailAddress: { address: e.trim() } }))
+      }
+    });
+    const options = {
+      hostname: 'graph.microsoft.com',
+      port: 443,
+      path: `/v1.0/users/${process.env.EMAIL_USER}/sendMail`,
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) }
+    };
+    return await new Promise((resolve) => {
+      const req = https.request(options, (res) => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          console.log(`[MS-GRAPH] ✅ Enviado: ${recipients.join(', ')}`);
+          resolve([{ recipients, success: true }]);
+        } else {
+          console.error(`[MS-GRAPH ERR] Status ${res.statusCode}`);
+          resolve(null);
+        }
+      });
+      req.on('error', (e) => { console.error(`[MS-GRAPH ERR] ${e.message}`); resolve(null); });
+      req.write(data); req.end();
+    });
+  } catch (e) { console.error(`[MS-GRAPH AUTH ERR] ${e.message}`); return null; }
+}
+
+async function sendMailResilient(mailOptions) {
+  const recipients = Array.isArray(mailOptions.to) ? mailOptions.to : [mailOptions.to];
+  
+  // 1. SOLUCIÓN LIMPIA: Microsoft Graph API (Oficial Azure)
+  if (process.env.AZURE_CLIENT_SECRET) {
+    const result = await sendMailMicrosoftGraph(mailOptions);
+    if (result) return result;
+  }
+
+  // 2. RESPALDO: SendGrid API (Puerto 443)
+  if (process.env.SENDGRID_API_KEY) {
+    const data = JSON.stringify({
+      personalizations: [{ to: recipients.map(email => ({ email: email.trim() })) }],
+      from: { email: process.env.EMAIL_USER, name: 'Iceberg Support' },
+      subject: mailOptions.subject,
+      content: [{ type: 'text/html', value: mailOptions.html }]
+    });
+    const options = {
+      hostname: 'api.sendgrid.com',
+      port: 443,
+      path: '/v3/mail/send',
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${process.env.SENDGRID_API_KEY}`, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) }
+    };
+    try {
+      return await new Promise((resolve) => {
+        const req = https.request(options, (res) => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            console.log(`[SENDGRID] ✅ Enviado a: ${recipients.join(', ')}`);
+            resolve([{ recipients, success: true }]);
+          } else { resolve(fallbackSMTP(mailOptions, recipients)); }
+        });
+        req.on('error', () => resolve(fallbackSMTP(mailOptions, recipients)));
+        req.write(data); req.end();
+      });
+    } catch (e) { return fallbackSMTP(mailOptions, recipients); }
+  }
+
+  return fallbackSMTP(mailOptions, recipients);
+}
+
+async function fallbackSMTP(mailOptions, recipients) {
+  const promises = recipients.map(async (recipient) => {
+    try {
+      await transporter.sendMail({ ...mailOptions, to: recipient });
+      console.log(`[SMTP-OLD] OK: ${recipient}`);
+      return { recipient, success: true };
+    } catch (err) {
+      console.error(`[SMTP-OLD ERR] ${recipient}:`, err.message);
+      return { recipient, success: false, error: err.message };
+    }
+  });
+  return Promise.all(promises);
+}
 
 const LOGO_PATH = path.join(__dirname, '..', 'assets', 'logo-iceberg.png');
 const EMAIL_ATTACHMENTS = fs.existsSync(LOGO_PATH) ? [{
@@ -36,29 +147,18 @@ const EMAIL_ATTACHMENTS = fs.existsSync(LOGO_PATH) ? [{
   cid: 'logo' 
 }] : [];
 
+const ADMIN_RECIPIENTS = [
+  "gustavo.velandia@iceberg.com.co",
+  "soporteti@iceberg.com.co",
+  "soporte2@iceberg.com.co",
+  "aprendiz.sistemas@iceberg.com.co",
+  "sistema.tickets@iceberg.com.co"
+];
+
 transporter.verify((err) => {
-  if (err) console.error('[MAIL SETUP ERROR]', err.message);
-  else console.log('[MAIL SERVER READY] ✅ Listo para notificar.');
+  if (err) console.error('[SMTP ERROR]', err.message);
+  else console.log('[SMTP READY] ✅ Conectado a Office365.');
 });
-
-const STAFF_EMAILS = {
-  "Gustavo Velandia": "gustavo.velandia@iceberg.com.co",
-  "Edgar Ducuara": "soporteti@iceberg.com.co",
-  "Stiven Arevalo": "soporte2@iceberg.com.co",
-  "Juan Ducuara": "aprendiz.sistemas@iceberg.com.co"
-};
-
-// Combinar emails del equipo fijo con los adicionales en .env y los dinámicos de Users
-const envAdmins = (process.env.ALL_ADMINS || "").split(",").map(e => e.trim()).filter(e => e);
-const STAFF_LIST = Object.values(STAFF_EMAILS);
-
-// Función dinámica: recalcula la lista de admins en cada envío (incluye cambios via /admin/emails)
-function getAllAdminEmails() {
-  const dynamicAdmins = (Users.getAdminEmails ? Users.getAdminEmails() : []).map(e => e.trim()).filter(e => e);
-  return [...new Set([...STAFF_LIST, ...envAdmins, ...dynamicAdmins])];
-}
-
-console.log(`[ICEBERG] Administradores Notificados (arranque): ${getAllAdminEmails().join(', ')}`);
 
 // BACKUP DIR — definido aquí para que esté disponible en todas las rutas
 const BACKUP_DIR = path.join(__dirname, 'backups');
@@ -244,35 +344,22 @@ app.post('/tickets', async (req, res) => {
     const t = await db.create(tData);
     await db.addAuditLog(actor, 'CREAR_TICKET', t.id, `Ticket "${t.title}" reportado por ${t.createdBy.name}`);
 
-    // Notificación interna (campana) — datos siempre definidos
+    // Notificación interna (campana)
     await createNotification(
       `Nuevo Ticket: ${t.id}`,
       `${t.createdBy.name} ha reportado: ${t.title}`,
-      t.id, 'all', 'info'
+      t.id, 'admin', 'info' // Solo administradores ven nuevos tickets inicialmente
     );
 
-    // Correo a los 4 administradores
-    const adminEmails = getAllAdminEmails();
+    // Correo al administrador principal
     const adminMail = {
-      to: adminEmails,
+      to: ADMIN_RECIPIENTS,
       subject: `Solicitud #${t.id} de IT Portal`,
       html: renderEmail(t, `Nueva solicitud técnica`, `NOTIFICACIÓN TI`, `NUEVA`, '#335495',
         `<p>Se ha registrado un caso con ID <strong>${t.id}</strong>.</p>${getGridTable(t)}`),
       attachments: EMAIL_ATTACHMENTS
     };
-    transporter.sendMail(adminMail).catch(e => console.error('[ADM-MAIL-ERR]', e.message));
-
-    // Correo de confirmación al usuario (solo si tiene email válido)
-    if (t.createdBy.email && t.createdBy.email.includes('@')) {
-      const userConfirmationMail = {
-        to: t.createdBy.email,
-        subject: `✅ Registro Exitoso: #${t.id}`,
-        html: renderEmail(t, `Tu solicitud ha sido registrada`, `CONFIRMACIÓN DE SOLICITUD`, `RECIBIDO`, '#16a34a',
-          `<p>Hola <strong>${t.createdBy.name}</strong>, tu solicitud con ID <strong>#${t.id}</strong> ha sido registrada correctamente. Pronto un técnico atenderá tu caso.</p>${getGridTable(t)}`),
-        attachments: EMAIL_ATTACHMENTS
-      };
-      transporter.sendMail(userConfirmationMail).catch(e => console.error('[USR MAIL]', e.message));
-    }
+    sendMailResilient(adminMail).catch(e => console.error('[ADM-MAIL-ERR]', e.message));
 
     res.status(201).json(t);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -299,35 +386,19 @@ app.put('/tickets/:id', async (req, res) => {
       const isAssignChange = old.assignedTo !== updated.assignedTo;
       const statusLabel = { 'abierto': 'ABIERTO', 'en-progreso': 'EN PROGRESO', 'resuelto': 'RESUELTO', 'cerrado': 'CERRADO' }[updated.status] || updated.status.toUpperCase();
 
-      // 1. Notify the User (Creator)
-      const userMail = {
-        to: updated.createdBy.email,
-        subject: isStatusChange ? `🔔 Actualización #${updated.id} → ${statusLabel}` : `👤 Técnico Asignado: #${updated.id}`,
-        html: renderEmail(updated, isStatusChange ? `Estado actualizado: ${statusLabel}` : 'Técnico asignado', `SEGUIMIENTO DE CASO`, isStatusChange ? 'ACTUALIZACIÓN' : 'ASIGNACIÓN', '#1e293b',
-          `<p>Hola <strong>${updated.createdBy.name}</strong>, el caso <strong>#${updated.id}</strong> tiene novedades:</p>${getGridTable(updated)}`),
+      // 2. DIFUSIÓN AL ADMINISTRADOR (Asignación, Proceso o Cierre)
+      const broadcastMail = {
+        to: ADMIN_RECIPIENTS,
+        subject: isAssignChange ? `🛠️ Asignación: #${updated.id}` : `📢 Cambio de Estado: #${updated.id} → ${statusLabel}`,
+        html: renderEmail(updated, isAssignChange ? `Técnico asignado: ${updated.assignedTo}` : `Nuevo estado: ${statusLabel}`, `CONTROL TI`, isAssignChange ? 'ASIGNACIÓN' : statusLabel, '#0f172a',
+           `<p>El ticket <strong>#${updated.id}</strong> ha sido actualizado por <strong>${actor}</strong>.</p>${getGridTable(updated)}`),
         attachments: EMAIL_ATTACHMENTS
       };
-      transporter.sendMail(userMail).catch(e => console.error('[USR-MAIL-ERR]', e));
-
-      // 2. Notify Assigned Admin (if changed/set)
-      if (isAssignChange && updated.assignedTo && STAFF_EMAILS[updated.assignedTo]) {
-        const staffMail = { ...userMail, to: STAFF_EMAILS[updated.assignedTo], subject: `🛠️ Ticket Asignado: #${updated.id}` };
-        staffMail.html = renderEmail(updated, `Se te ha asignado un nuevo ticket`, `ASIGNACIÓN TÉCNICA`, `NUEVA TAREA`, '#335495',
-           `<p>Hola <strong>${updated.assignedTo}</strong>, se te ha asignado el ticket <strong>#${updated.id}</strong>.</p>${getGridTable(updated)}`);
-        transporter.sendMail(staffMail).catch(e => console.error('[STAFF-MAIL-ERR]', e));
-      }
-
-      // 3. Notify ALL Admins (if status is active/resolved/fixed)
-      if (isStatusChange && ['en-progreso', 'resuelto', 'cerrado'].includes(updated.status)) {
-        const broadcastMail = { ...userMail, to: getAllAdminEmails(), subject: `📢 Reporte de Cambio: #${updated.id} es ${statusLabel}` };
-        broadcastMail.html = renderEmail(updated, `Notificación de Estado`, `CONTROL TI`, statusLabel, '#0f172a',
-           `<p>El ticket <strong>#${updated.id}</strong> ha pasado a estado <strong>${statusLabel}</strong>.</p>${getGridTable(updated)}`);
-        transporter.sendMail(broadcastMail).catch(e => console.error('[BROAD-MAIL-ERR]', e));
-      }
+      sendMailResilient(broadcastMail).catch(e => console.error('[BROAD-MAIL-ERR]', e));
       
-      const msg = isStatusChange ? `El estado cambió a ${statusLabel}` : `Técnico asignado: ${updated.assignedTo}`;
-      // Usamos 'all' para que tanto el usuario como los 4 administradores vean la alerta en la campana
-      await createNotification(`Actualización #${updated.id}`, msg, updated.id, 'all', 'info');
+      const msg = isStatusChange ? `Estado: ${statusLabel}` : `Asignado a: ${updated.assignedTo}`;
+      await createNotification(`Actualización #${updated.id}`, msg, updated.id, updated.createdBy.email, 'info');
+      await createNotification(`Actualización #${updated.id}`, msg, updated.id, 'admin', 'info');
     }
     res.json(updated);
   } catch (e) { res.status(500).send(); }
@@ -342,14 +413,14 @@ app.delete('/tickets/:id', async (req, res) => {
     if (t) {
       await db.addAuditLog(actor, 'ELIMINAR_TICKET', id, `Ticket de ${t.createdBy?.name || 'Usuario'} eliminado`);
       const delMail = {
-        to: getAllAdminEmails(),
+        to: ADMIN_RECIPIENTS,
         subject: `El ${t.id} ha sido eliminado correctamente`,
         html: renderEmail(t, `Ticket eliminado del sistema`, `SEGURIDAD TI`, `BORRADO`, '#e11d48',
           `<p>El Ticket <strong>#${t.id}</strong> con título "<strong>${t.title}</strong>" ha sido eliminado por un administrador.</p>`),
         attachments: EMAIL_ATTACHMENTS
       };
-      transporter.sendMail(delMail).catch(e => console.error('[DEL-MAIL-ERR]', e));
-      await createNotification(`Ticket Eliminado: ${t.id}`, `El ticket de ${t.createdBy.name} ha sido borrado por administración.`, t.id, 'all', 'warning');
+      sendMailResilient(delMail).catch(e => console.error('[DEL-MAIL-ERR]', e));
+      await createNotification(`Ticket Eliminado: ${t.id}`, `El ticket de ${t.createdBy.name} ha sido borrado por administración.`, t.id, 'admin', 'warning');
     }
     res.json({ success: true });
   } catch (e) { res.status(500).send(); }
@@ -515,8 +586,29 @@ app.post('/auth/sync-microsoft', async (req, res) => {
 
 app.get('/notifications', async (req, res) => {
   try {
-    const rows = await db.getNotifications(50);
-    res.json(rows);
+    const userEmail = (req.headers['iceberg-user'] || '').toLowerCase().trim();
+    // console.log(`[NOTIF-FETCH] User: ${userEmail || 'ANONYMOUS'}`);
+    
+    // Si no hay usuario, devolver nada por seguridad
+    if (!userEmail) return res.json([]);
+
+    // Determinar si es admin
+    const isAdmin = Users.isMasterAdmin(userEmail) || Users.getAdminEmails().includes(userEmail);
+
+    const all = await db.getNotifications(50);
+
+    // Filtrar:
+    // 1. Notificaciones para 'all' (conectividad, etc)
+    // 2. Notificaciones para 'admin' (si el usuario es admin)
+    // 3. Notificaciones específicas para este email
+    const filtered = all.filter(n => {
+      if (n.userId === 'all') return true;
+      if (n.userId === 'admin' && isAdmin) return true;
+      if (n.userId === userEmail) return true;
+      return false;
+    });
+
+    res.json(filtered);
   } catch (e) { res.status(500).json([]); }
 });
 
@@ -541,14 +633,36 @@ async function createNotification(title, message, ticketId, userId = 'all', type
   } catch (e) { console.error('[NOTIF ERR]', e.message); }
 }
 
+app.get('/debug/state', async (req, res) => {
+  try {
+    const list = await db.getAll();
+    res.json({
+      ticketsCount: list.length,
+      serverTime: new Date().toISOString(),
+      nodeEnv: process.env.NODE_ENV || 'development',
+      port: PORT,
+      adminCount: Users.getAdminEmails().length
+    });
+  } catch (e) { res.json({ error: e.message }); }
+});
+
 app.get('*', (req, res) => {
   if (req.path.includes('/')) res.sendFile(path.join(__dirname, '..', 'index.html'));
   else res.status(404).send();
 });
 
 const server = app.listen(PORT, () => {
-  console.log(`[ICEBERG] ✅ ONLINE | PUERTO: ${PORT} | V: 9.6 (LocalJSON/StaffSync)`);
+  console.log(`[ICEBERG] ✅ ONLINE | PUERTO: ${PORT} | V: 9.7 (Resilient)`);
+  // Inicialización asíncrona sin bloquear el inicio
   Users.initialize().catch(() => { });
+  
+  // Verificación de transporters en segundo plano
+  setTimeout(() => {
+    transporter.verify((err) => {
+      if (err) console.error('[OUTLOOK STATUS] Offline (Port 587 Blocked?)');
+      else console.log('[OUTLOOK STATUS] Connected.');
+    });
+  }, 1000);
 });
 
 process.on('uncaughtException', (err) => console.error('[FATAL]', err.message));

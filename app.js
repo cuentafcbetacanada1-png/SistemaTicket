@@ -81,12 +81,21 @@ const PROD_URL = 'https://sistema-tickets.up.railway.app';
 // Inteligencia de URL: Si estamos en file:// buscamos primero un servidor local en el puerto 3000.
 let API_URL_VAR = (window.location.protocol === 'http:' || window.location.protocol === 'https:') ? window.location.origin : 'http://localhost:3000';
 // Fallback a producción solo si no es local file o si falla (opcional, por ahora forzamos local)
-let API_URL = localStorage.getItem('ice_api_override') || API_URL_VAR;
-if (API_URL.endsWith('/')) API_URL = API_URL.slice(0, -1);
-console.log(`[ICEBERG] API Endpoint: ${API_URL}`);
+let API_URL = window.location.origin;
+try {
+    const override = localStorage.getItem('ice_api_override');
+    if (override) API_URL = override;
+    else if (IS_LOCAL_FILE) API_URL = 'http://localhost:3000';
+} catch(e) {}
+
+if (typeof API_URL === 'string' && API_URL.endsWith('/')) API_URL = API_URL.slice(0, -1);
+console.log(`%c[ICEBERG] API Endpoint: %c${API_URL}`, "font-weight:bold; color:#7c3aed;", "font-weight:bold; color:#2563eb;");
+if (window.location.hostname === 'localhost') {
+  console.warn("⚠️ ESTÁS EN LOCALHOST. Si quieres probar Railway, usa la URL de producción.");
+}
 
 const API = {
-  _up: null,   
+  _up: null,
 
   async _fetch(path, opts = {}) {
     const cleanPath = path.startsWith('/') ? path : '/' + path;
@@ -94,12 +103,12 @@ const API = {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 20000);
     try {
-      const headers = { 
+      const headers = {
         'Content-Type': 'application/json',
-        ...(opts.headers || {}), 
-        'iceberg-user': (Store.getSession()?.email || 'Desconocido') 
+        ...(opts.headers || {}),
+        'iceberg-user': (Store.getSession()?.email || 'Desconocido')
       };
-      
+
       const r = await fetch(url, { ...opts, headers, signal: ctrl.signal });
       clearTimeout(timer);
       this._up = r.ok || (r.status < 500 && r.status !== 503);
@@ -118,7 +127,7 @@ const API = {
       const r = await this._fetch('/health');
       const d = await r.json();
       this._up = true;
-      this._dbConnected = true; 
+      this._dbConnected = true;
       this._dbMode = d.dbMode || 'local';
       return d;
     } catch {
@@ -157,7 +166,7 @@ const API = {
       });
       return await r.json();
     } catch {
-      return ticket; 
+      return ticket;
     }
   },
 
@@ -186,7 +195,7 @@ const API = {
       await this._fetch(url, { method: 'DELETE' });
       return true;
     } catch {
-      return true; 
+      return true;
     }
   },
 
@@ -216,7 +225,7 @@ const API = {
   serverLabel() {
     if (this._up === null) return { text: 'Verificando…', cls: 'server-unknown' };
     if (this._up === true) {
-        return { text: '● Servidor corporativo OK', cls: 'server-online' };
+      return { text: '● Servidor corporativo OK', cls: 'server-online' };
     }
     return { text: '● Modo offline (localStorage)', cls: 'server-offline' };
   },
@@ -269,27 +278,27 @@ const APP = {
           const wasUp = API._up !== false;
           // Si el servidor o la BD están caídos, intentamos reconectar
           if (API._up === false || API._dbConnected === false) await API.checkHealth();
-          
+
           const isUp = API._up !== false;
-          
+
           if (!isUp && wasUp && !this._serverDownNotified) {
-             this._serverDownNotified = true;
-             this.addLocalNotification({
-                id: 'sys-down',
-                title: 'Servidor Desconectado',
-                message: 'La conexión con el servidor se ha perdido. Trabajando en modo local.',
-                type: 'warning',
-                timestamp: new Date().toISOString()
-             });
+            this._serverDownNotified = true;
+            this.addLocalNotification({
+              id: 'sys-down',
+              title: 'Servidor Desconectado',
+              message: 'La conexión con el servidor se ha perdido. Trabajando en modo local.',
+              type: 'warning',
+              timestamp: new Date().toISOString()
+            });
           } else if (isUp && !wasUp) {
-             this._serverDownNotified = false;
-             this.addLocalNotification({
-                id: 'sys-up',
-                title: 'Conexión Recuperada',
-                message: 'El servidor está online nuevamente. Sincronizando datos...',
-                type: 'info',
-                timestamp: new Date().toISOString()
-             });
+            this._serverDownNotified = false;
+            this.addLocalNotification({
+              id: 'sys-up',
+              title: 'Conexión Recuperada',
+              message: 'El servidor está online nuevamente. Sincronizando datos...',
+              type: 'info',
+              timestamp: new Date().toISOString()
+            });
           }
 
           if (isUp && API._dbConnected !== false) {
@@ -405,7 +414,7 @@ const APP = {
     const btn = document.getElementById('btn-ms-login');
     const txt = document.getElementById('ms-btn-txt');
     const spin = document.getElementById('ms-spinner');
-    
+
     if (this._msalPending) return;
     this._msalPending = true;
 
@@ -413,7 +422,7 @@ const APP = {
     txt.style.display = 'none';
     spin.style.display = 'block';
     try {
-      sessionStorage.clear(); 
+      sessionStorage.clear();
       const resp = await msalApp.loginPopup(MSAL_SCOPES);
       await this._onMsalSuccess(resp);
     } catch (err) {
@@ -470,7 +479,7 @@ const APP = {
         throw new Error(errData.error || 'Error de sincronización con el servidor.');
       }
       const syncData = await syncResp.json();
-      
+
       this._finishLogin({ ...syncData.user, source: 'microsoft' });
       return;
     } catch (err) {
@@ -680,11 +689,11 @@ const APP = {
 
     const msRestrictedClose = document.getElementById('ms-restricted-close');
     if (msRestrictedClose) {
-        msRestrictedClose.addEventListener('click', () => {
-          const modal = document.getElementById('ms-restricted-modal');
-          modal.classList.remove('active');
-          setTimeout(() => { modal.style.display = 'none'; }, 300);
-        });
+      msRestrictedClose.addEventListener('click', () => {
+        const modal = document.getElementById('ms-restricted-modal');
+        modal.classList.remove('active');
+        setTimeout(() => { modal.style.display = 'none'; }, 300);
+      });
     }
 
     document.getElementById('btn-nv-back').addEventListener('click', () => {
@@ -722,13 +731,13 @@ const APP = {
     } else {
       document.getElementById('admin-nav').style.display = 'none';
     }
-    
+
     // Elite Profile Data
     const eName = document.getElementById('ud-name-full');
     const eEmail = document.getElementById('ud-email-full');
     if (eName) eName.textContent = this.user.name;
     if (eEmail) eEmail.textContent = this.user.email;
-    
+
     this.setupProfileDropdown();
 
     const hour = new Date().getHours();
@@ -767,8 +776,8 @@ const APP = {
     const sb = document.getElementById('sidebar');
     const ov = document.getElementById('sb-overlay');
 
-    const open = () => { if(sb) sb.classList.add('open'); if(ov) ov.classList.add('show'); };
-    const close = () => { if(sb) sb.classList.remove('open'); if(ov) ov.classList.remove('show'); };
+    const open = () => { if (sb) sb.classList.add('open'); if (ov) ov.classList.add('show'); };
+    const close = () => { if (sb) sb.classList.remove('open'); if (ov) ov.classList.remove('show'); };
 
     const btnOpen = document.getElementById('sb-open');
     if (btnOpen) btnOpen.addEventListener('click', open);
@@ -869,7 +878,7 @@ const APP = {
     const tlist = this.tickets || [];
     const uid = this.user?.id;
     const umail = this.user?.email?.toLowerCase();
-    
+
     // Sincronizado con renderMyTickets para evitar discrepancias
     const mine = tlist.filter(t => {
       if (!t.createdBy || !this.user) return false;
@@ -894,10 +903,10 @@ const APP = {
       (t.createdBy && t.createdBy.id === this.user.id) ||
       (t.createdBy && t.createdBy.email && this.user.email && t.createdBy.email.toLowerCase() === this.user.email.toLowerCase())
     );
-    
+
     if (q) {
-      mine = mine.filter(t => 
-        (t.title || '').toLowerCase().includes(q) || 
+      mine = mine.filter(t =>
+        (t.title || '').toLowerCase().includes(q) ||
         (t.id || '').toLowerCase().includes(q) ||
         (t.description || '').toLowerCase().includes(q)
       );
@@ -1014,7 +1023,7 @@ const APP = {
     const area = document.getElementById('t-area').value;
 
     // Hide previous errors
-    ['err-title','err-desc','err-area'].forEach(id => {
+    ['err-title', 'err-desc', 'err-area'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';
     });
@@ -1079,10 +1088,10 @@ const APP = {
       ticket.localOnly = true;
       Store.saveLocal([ticket, ...local]);
       this.tickets = Store.getLocalTickets();
-      this.showToast(IS_LOCAL_FILE 
-        ? 'Error de Red: No se pudo conectar al servidor de Railway desde este archivo local.' 
+      this.showToast(IS_LOCAL_FILE
+        ? 'Error de Red: No se pudo conectar al servidor de Railway desde este archivo local.'
         : 'Error de Red: El servidor no responde o tu conexión es inestable.', 'error');
-      
+
       // Notificación Local
       this.addLocalNotification({
         id: `local-${Date.now()}`,
@@ -1118,9 +1127,9 @@ const APP = {
 
     const q = (document.getElementById('global-search')?.value || '').toLowerCase().trim();
     if (q) {
-      list = list.filter(t => 
-        (t.id || '').toLowerCase().includes(q) || 
-        (t.title || '').toLowerCase().includes(q) || 
+      list = list.filter(t =>
+        (t.id || '').toLowerCase().includes(q) ||
+        (t.title || '').toLowerCase().includes(q) ||
         (t.description || '').toLowerCase().includes(q)
       );
     }
@@ -1208,7 +1217,7 @@ const APP = {
     const weekAgo = now - (7 * 24 * 60 * 60 * 1000);
     const thisWeek = all.filter(t => new Date(t.createdAt) >= weekAgo).length;
     const resolved = all.filter(t => t.status === 'resuelto' || t.status === 'cerrado');
-    
+
     let avgMin = 0;
     if (resolved.length > 0) {
       const totalMs = resolved.reduce((acc, t) => {
@@ -1227,23 +1236,23 @@ const APP = {
     };
 
     Object.entries(statsMap).forEach(([id, val]) => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = val;
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
     });
 
     const recent = (all || []).slice().sort((a, b) => {
-        const da = a.createdAt ? new Date(a.createdAt) : 0;
-        const db = b.createdAt ? new Date(b.createdAt) : 0;
-        return db - da;
+      const da = a.createdAt ? new Date(a.createdAt) : 0;
+      const db = b.createdAt ? new Date(b.createdAt) : 0;
+      return db - da;
     }).slice(0, 10);
 
     const tbody = document.querySelector('#table-admin-recent tbody');
     if (tbody) {
-        tbody.innerHTML = recent.map(t => {
-            const tTitle = t.title || 'Sin título';
-            const tArea = t.area || 'General';
-            const tUser = this.uName(t.createdBy);
-            return `
+      tbody.innerHTML = recent.map(t => {
+        const tTitle = t.title || 'Sin título';
+        const tArea = t.area || 'General';
+        const tUser = this.uName(t.createdBy);
+        return `
             <tr>
                 <td><span class="tid">${t.id}</span></td>
                 <td><div style="font-weight:700">${this.esc(tTitle)}</div><div style="font-size:10px; color:var(--t3)">${CAT_LABELS[t.category] || t.category || 'Requerimiento'}</div></td>
@@ -1259,25 +1268,25 @@ const APP = {
 
     const catEl = document.getElementById('admin-cat-chart');
     if (catEl) {
-        const catCount = {};
-        all.forEach(t => { catCount[t.category] = (catCount[t.category] || 0) + 1; });
-        const html = Object.entries(CAT_LABELS).map(([key, label]) => {
-            const count = catCount[key] || 0;
-            const pct = all.length ? Math.round(count / all.length * 100) : 0;
-            return `
+      const catCount = {};
+      all.forEach(t => { catCount[t.category] = (catCount[t.category] || 0) + 1; });
+      const html = Object.entries(CAT_LABELS).map(([key, label]) => {
+        const count = catCount[key] || 0;
+        const pct = all.length ? Math.round(count / all.length * 100) : 0;
+        return `
                 <div class="pie-item">
                     <span class="pie-lbl">${label}</span>
                     <div class="pie-bar-wrap"><div class="pie-bar" style="width:${pct}%; background:${CAT_COLORS[key] || '#64748b'}"></div></div>
                     <span class="pie-val">${count}</span>
                 </div>`;
-        }).join('');
-        catEl.innerHTML = html || '<div style="text-align:center; padding:40px; color:var(--t3)">Sin datos disponibles para cargar el gráfico.</div>';
+      }).join('');
+      catEl.innerHTML = html || '<div style="text-align:center; padding:40px; color:var(--t3)">Sin datos disponibles para cargar el gráfico.</div>';
     }
 
     const critEl = document.getElementById('admin-critical-list');
     if (critEl) {
-        const critList = all.filter(t => (t.priority === 'critica' || t.priority === 'alta') && t.status !== 'cerrado').slice(0, 5);
-        critEl.innerHTML = critList.map(t => `
+      const critList = all.filter(t => (t.priority === 'critica' || t.priority === 'alta') && t.status !== 'cerrado').slice(0, 5);
+      critEl.innerHTML = critList.map(t => `
             <div class="stat-card" style="margin-bottom:12px; cursor:pointer" onclick="APP.openModal('${t.id}')">
                 <div class="stat-ico" style="background:#fef2f2; color:#ef4444"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div>
                 <div>
@@ -1313,8 +1322,8 @@ const APP = {
 
     let filtered = this.tickets;
     if (q) {
-      filtered = filtered.filter(t => 
-        (t.id || '').toLowerCase().includes(q) || 
+      filtered = filtered.filter(t =>
+        (t.id || '').toLowerCase().includes(q) ||
         (t.title || '').toLowerCase().includes(q) ||
         (this.uName(t.createdBy) || '').toLowerCase().includes(q) ||
         (t.area || '').toLowerCase().includes(q)
@@ -1322,10 +1331,10 @@ const APP = {
     }
 
     tbody.innerHTML = (filtered || []).map(t => {
-        const tTitle = t.title || 'Sin título';
-        const tUser = this.uName(t.createdBy);
-        const tArea = t.area || 'General';
-        return `
+      const tTitle = t.title || 'Sin título';
+      const tUser = this.uName(t.createdBy);
+      const tArea = t.area || 'General';
+      return `
         <tr>
             <td><span class="tid">${t.id}</span></td>
             <td><div>${this.esc(tTitle)}</div><div style="font-size:10px; color:var(--t3)">${CAT_LABELS[t.category] || t.category || 'Requerimiento'}</div></td>
@@ -1345,18 +1354,18 @@ const APP = {
     if (!listTable) return;
     this.renderAdminEmails();
     try {
-        const users = await API._fetch('/admin/users').then(r => r.json());
-        if (!users.length) {
-          listTable.innerHTML = `<div style="padding:40px; text-align:center; color:var(--t3); border:1px dashed var(--border); border-radius:18px; background:var(--bg);">
+      const users = await API._fetch('/admin/users').then(r => r.json());
+      if (!users.length) {
+        listTable.innerHTML = `<div style="padding:40px; text-align:center; color:var(--t3); border:1px dashed var(--border); border-radius:18px; background:var(--bg);">
             <div style="margin-bottom:12px; color:var(--primary); opacity:0.5;">
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             </div>
             <strong style="display:block; color:var(--t1);">No hay usuarios registrados</strong>
             <p style="font-size:13px; margin-top:4px;">Los usuarios vinculados al sistema aparecerán en este listado.</p>
           </div>`;
-          return;
-        }
-        listTable.innerHTML = `<div class="table-wrapper"><table class="refined-table">
+        return;
+      }
+      listTable.innerHTML = `<div class="table-wrapper"><table class="refined-table">
             <thead><tr><th>Usuario</th><th>Email</th><th>Área</th><th>Estado</th><th style="text-align:right">Acciones</th></tr></thead>
             <tbody>
                 ${users.map(u => `
@@ -1366,7 +1375,7 @@ const APP = {
                         <td>${u.area || '—'}</td>
                         <td><span class="badg badg-${u.active ? 'resuelto' : 'cerrado'}" style="padding:4px 8px; font-size:10px;">${u.active ? 'Activo' : 'Inactivo'}</span></td>
                         <td style="text-align:right; display:flex; gap:8px; justify-content:flex-end;">
-                           <button class="icon-btn" onclick="APP._toggleUserStatus('${u.id}')" title="${u.active?'Desactivar':'Activar'}">
+                           <button class="icon-btn" onclick="APP._toggleUserStatus('${u.id}')" title="${u.active ? 'Desactivar' : 'Activar'}">
                               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                                  <path d="M18.36 6.64a9 9 0 1 1-12.73 0M12 2v10" />
                               </svg>
@@ -1391,8 +1400,9 @@ const APP = {
       // Direct fetch from API
       const resp = await API._fetch('/admin/emails');
       const emails = await resp.json();
-      
-      box.innerHTML = `<div style="display:flex; flex-wrap:nowrap; overflow-x:auto; padding-bottom:12px; gap:8px;">` + 
+
+      box.innerHTML = `
+        <div style="display:flex; flex-wrap:nowrap; overflow-x:auto; padding-bottom:12px; gap:8px;">` +
         emails.map(e => `
         <div class="admin-chip" style="flex-shrink:0; display:inline-flex; align-items:center; gap:8px; margin:4px 0; padding:10px 16px; font-size:12px; background:#f0f7ff; color:#335495; border:1.8px solid #335495; border-radius:12px; font-weight:800; box-shadow:0 4px 6px -1px rgba(51,84,149,0.1);">
            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -1413,7 +1423,7 @@ const APP = {
     const email = input.value.trim();
     if (!email) return;
     try {
-      await API._fetch('/admin/emails', { method: 'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email}) });
+      await API._fetch('/admin/emails', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
       input.value = '';
       this.showToast('Administrador agregado.', 'success');
       this.renderAdminUsers();
@@ -1423,7 +1433,7 @@ const APP = {
   async _deleteAdminEmail(email) {
     if (!confirm(`¿Revocar permisos de administrador a ${email}?`)) return;
     try {
-      await API._fetch('/admin/emails', { method: 'DELETE', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email}) });
+      await API._fetch('/admin/emails', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
       this.showToast('Permisos revocados.', 'info');
       this.renderAdminUsers();
     } catch { this.showToast('Error al revocar.', 'error'); }
@@ -1449,8 +1459,8 @@ const APP = {
     const container = document.getElementById('backup-list-container');
     if (!container) return;
     try {
-        const backups = await API.listBackups();
-        container.innerHTML = `<table class="refined-table">
+      const backups = await API.listBackups();
+      container.innerHTML = `<table class="refined-table">
             <thead><tr><th>Archivo</th><th>Fecha</th><th>Tamaño</th><th>Acciones</th></tr></thead>
             <tbody>
                 ${backups.map(b => `
@@ -1467,26 +1477,26 @@ const APP = {
             </tbody>
         </table>`;
     } catch {
-        container.innerHTML = '<p style="padding:20px; color:var(--t3)">Error cargando backups.</p>';
+      container.innerHTML = '<p style="padding:20px; color:var(--t3)">Error cargando backups.</p>';
     }
   },
 
   async _createManualBackup() {
     this.showToast('Creando backup...', 'info');
     try {
-        await API.createBackup();
-        this.showToast('Backup creado con éxito.', 'success');
-        this.renderAdminBackup();
+      await API.createBackup();
+      this.showToast('Backup creado con éxito.', 'success');
+      this.renderAdminBackup();
     } catch { this.showToast('Error al crear backup.', 'error'); }
   },
 
   async _restoreBackup(filename) {
     if (!confirm(`¿Restaurar desde ${filename}? Se borrarán los datos actuales.`)) return;
     try {
-        await API.restoreBackup(filename);
-        this.tickets = await API.getTickets();
-        this.showToast('Datos restaurados con éxito.', 'success');
-        this.renderView('dashboard');
+      await API.restoreBackup(filename);
+      this.tickets = await API.getTickets();
+      this.showToast('Datos restaurados con éxito.', 'success');
+      this.renderView('dashboard');
     } catch { this.showToast('Error al restaurar el backup.', 'error'); }
   },
 
@@ -1580,7 +1590,7 @@ const APP = {
              <div style="display:flex; align-items:center; gap:12px; min-width:320px; flex:1; justify-content:flex-end;">
                <div style="position:relative; flex:1; max-width:200px;">
                   <select id="m-status-sel" class="fsel" style="width:100% !important; padding:12px 16px !important; font-weight:800; border:2.2px solid var(--border-thick) !important; text-transform:uppercase; font-size:0.8rem; background-color:white !important; border-radius:12px !important;">
-                    ${['abierto','en-progreso','resuelto','cerrado'].map(s => `<option value="${s}" ${t.status===s?'selected':''}>${s.toUpperCase()}</option>`).join('')}
+                    ${['abierto', 'en-progreso', 'resuelto', 'cerrado'].map(s => `<option value="${s}" ${t.status === s ? 'selected' : ''}>${s.toUpperCase()}</option>`).join('')}
                   </select>
                </div>
                <button class="btn-primary" onclick="APP.saveModal()" style="padding:13px 28px; font-weight:800; border-radius:12px; box-shadow: 0 8px 16px -4px rgba(79,70,229,0.35);">Guardar Cambios</button>
@@ -1617,7 +1627,7 @@ const APP = {
     const t = this.tickets.find(x => x.id === this.openTicketId);
     const note = { author: this.user.name, text: val, date: new Date().toISOString() };
     const notes = [...(t.notes || []), note];
-    
+
     await API.updateTicket(t.id, { notes });
     document.getElementById('m-note-val').value = '';
     this.tickets = await API.getTickets();
@@ -1654,11 +1664,11 @@ const APP = {
   bindGlobalSearch() {
     const inp = document.getElementById('global-search');
     if (!inp) return;
-    
+
     inp.oninput = () => {
       const q = inp.value.toLowerCase().trim();
       if (!this.user) return;
-      
+
       // If we are on a view that has a ticket list, re-render it
       if (this.currentView === 'dashboard' || this.currentView === 'my-tickets' || this.currentView === 'admin-tickets') {
         this.renderView(this.currentView);
@@ -1725,13 +1735,13 @@ const APP = {
       </div>`;
   },
 
-  statusBadge(s) { 
+  statusBadge(s) {
     const label = STATUS_LABELS[s] || s;
-    return `<span class="pill ${s}">${label.toUpperCase()}</span>`; 
+    return `<span class="pill ${s}">${label.toUpperCase()}</span>`;
   },
-  priorityBadge(p) { 
+  priorityBadge(p) {
     const label = PRIORITY_LABELS[p.toLowerCase()] || p;
-    return `<span class="pill ${p.toLowerCase()}">${label.toUpperCase()}</span>`; 
+    return `<span class="pill ${p.toLowerCase()}">${label.toUpperCase()}</span>`;
   },
 
   emptyState(title, sub = '', showBtn = false) {
@@ -1793,9 +1803,9 @@ const APP = {
     t.innerHTML = `<div class="toast-msg">${msg}</div>`;
     c.appendChild(t);
     setTimeout(() => {
-        t.style.opacity = '0';
-        t.style.transform = 'translateY(10px) scale(0.95)';
-        setTimeout(() => t.remove(), 400);
+      t.style.opacity = '0';
+      t.style.transform = 'translateY(10px) scale(0.95)';
+      setTimeout(() => t.remove(), 400);
     }, 3600);
   },
 
@@ -1803,12 +1813,11 @@ const APP = {
     if (!this.user) return;
     const box = document.getElementById('notif-list');
     if (box && !box.innerHTML.trim()) {
-        box.innerHTML = '<div style="padding:40px 20px; text-align:center; color:var(--t3);"><div class="spinner" style="margin:0 auto 10px;"></div>Cargando...</div>';
+      box.innerHTML = '<div style="padding:40px 20px; text-align:center; color:var(--t3);"><div class="spinner" style="margin:0 auto 10px;"></div>Cargando...</div>';
     }
     try {
-
-      const r = await API._fetch('/notifications');
-      const list = await r.json();
+      const resp = await API._fetch('/notifications');
+      const list = await resp.json();
 
       const localNotifs = Store.getLocalNotifications();
       const combined = [...localNotifs, ...list].sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
@@ -1819,7 +1828,7 @@ const APP = {
         if (this._lastNotifId !== newest.id) {
           this._lastNotifId = newest.id;
           if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
-             new Notification(newest.title, { body: newest.message, icon: 'assets/logo-iceberg.png' });
+            new Notification(newest.title, { body: newest.message, icon: 'assets/logo-iceberg.png' });
           }
         }
       }
@@ -1847,10 +1856,10 @@ const APP = {
   renderNotifications(list, isErr = false) {
     const badge = document.getElementById('notif-badge');
     const box = document.getElementById('notif-list');
-    
+
     if (isErr && box) {
-        box.innerHTML = '<div style="padding:40px 20px; text-align:center; color:var(--error); font-size:0.85rem; font-weight:600;">⚠️ Error de conexión con el servidor de notificaciones</div>';
-        return;
+      box.innerHTML = '<div style="padding:40px 20px; text-align:center; color:var(--error); font-size:0.85rem; font-weight:600;">⚠️ Error de conexión con el servidor de notificaciones</div>';
+      return;
     }
 
     const unread = list.filter(n => !n.read).length;
@@ -1858,13 +1867,13 @@ const APP = {
 
     if (badge) { badge.textContent = unread; badge.style.display = unread > 0 ? 'flex' : 'none'; }
     if (box) {
-        if (!list.length) { box.innerHTML = '<div style="padding:40px 20px; text-align:center; color:var(--t3); font-size:0.85rem;">No tienes mensajes nuevos</div>'; return; }
-        box.innerHTML = list.map(n => {
-            const isWarn = n.type === 'warning';
-            const icon = isWarn ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16" style="color:var(--error);"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>` 
-                               : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16" style="color:var(--primary);"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`;
-            return `
-            <div class="notif-item ${n.read?'':'unread'}" onclick="APP.readNotif('${n.id}', '${n.ticketId}')">
+      if (!list.length) { box.innerHTML = '<div style="padding:40px 20px; text-align:center; color:var(--t3); font-size:0.85rem;">No tienes mensajes nuevos</div>'; return; }
+      box.innerHTML = list.map(n => {
+        const isWarn = n.type === 'warning';
+        const icon = isWarn ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16" style="color:var(--error);"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`
+          : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16" style="color:var(--primary);"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`;
+        return `
+            <div class="notif-item ${n.read ? '' : 'unread'}" onclick="APP.readNotif('${n.id}', '${n.ticketId}')">
                 <div class="ni-icon">${icon}</div>
                 <div class="ni-content">
                     <div class="ni-title">${this.esc(n.title)}</div>
@@ -1873,7 +1882,7 @@ const APP = {
                 </div>
             </div>
             `;
-        }).join('');
+      }).join('');
     }
   },
 

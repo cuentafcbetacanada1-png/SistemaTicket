@@ -78,7 +78,6 @@ module.exports = {
   async getNotifications(limit = 50) {
     return readJSON(PATHS.notifications)
       .sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0))
-      .reverse()
       .slice(0, limit);
   },
 

@@ -1,11 +1,11 @@
 'use strict';
+const path = require('path');
+const fs = require('fs');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 console.log('[ENV] Buscando variables en:', path.join(__dirname, '..', '.env'), fs.existsSync(path.join(__dirname, '..', '.env')) ? '✅ ENCONTRADO' : '❌ NO ENCONTRADO');
 
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
-const fs = require('fs');
 const https = require('https');
 const db = require('./db');
 const nodemailer = require('nodemailer');

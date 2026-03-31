@@ -274,7 +274,7 @@ const APP = {
 
     if (!this._syncInterval) {
       this._syncInterval = setInterval(async () => {
-        if (this.user) {
+        if (this.user && document.visibilityState === 'visible') {
           const wasUp = API._up !== false;
           if (API._up === false || API._dbConnected === false) await API.checkHealth();
 
@@ -2005,7 +2005,9 @@ const APP = {
     if (btn) btn.onclick = e => { e.stopPropagation(); p.classList.toggle('active'); if (p.classList.contains('active')) this.fetchNotifications(); };
     document.getElementById('notif-read-all').onclick = async () => { await API._fetch('/notifications/read-all', { method: 'POST' }); this.fetchNotifications(); };
     document.onclick = () => p.classList.remove('active');
-    setInterval(() => this.fetchNotifications(), 10000);
+    setInterval(() => {
+      if (document.visibilityState === 'visible') this.fetchNotifications();
+    }, 10000);
   },
 
   async syncOfflineTickets() {

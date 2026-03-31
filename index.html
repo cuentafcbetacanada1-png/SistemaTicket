@@ -45,18 +45,32 @@
     .ticket-col-left { flex: 1.5 !important; }
     .ticket-col-right { flex: 1 !important; }
 
-    /* Dark Mode Components */
+    /* Dark Mode Components - Comprehensive Override */
     body.theme-dark {
-      --bg: #0f172a; --surface: #1e293b; --surface-glass: rgba(30,41,59,0.85); --border: #334155; --border-thick: #475569;
-      --t1: #f8fafc; --t2: #cbd5e1; --t3: #94a3b8; --border-muted: #1e293b;
+      --bg: #0b1120;
+      --surface: #1e293b;
+      --surface-glass: rgba(30,41,59,0.85);
+      --border: #334155;
+      --border-thick: #475569;
+      --t1: #f8fafc;
+      --t2: #cbd5e1;
+      --t3: #94a3b8;
+      --border-muted: #1e293b;
     }
-    body.theme-dark .sidebar, body.theme-dark .topbar, body.theme-dark .view-pane { background: var(--bg); }
-    body.theme-dark .stat-card, body.theme-dark .dash-card, body.theme-dark .step-box, body.theme-dark .ticket-mini-card, body.theme-dark .cat-card, body.theme-dark .login-card, body.theme-dark .staff-card, body.theme-dark .support-module, body.theme-dark .u-dropdown-panel, body.theme-dark .notif-panel, body.theme-dark .modal-content-new { background: var(--surface) !important; color: var(--t1); border-color: var(--border) !important; }
-    body.theme-dark input, body.theme-dark select, body.theme-dark textarea { background: #0f172a !important; color: var(--t1) !important; border-color: var(--border) !important; }
-    body.theme-dark .refined-table th { background: #334155; color: var(--t1); }
-    body.theme-dark .refined-table td { border-bottom-color: var(--border); }
+    body.theme-dark, body.theme-dark .main-wrap, body.theme-dark .view-pane, body.theme-dark .sidebar { background: var(--bg) !important; color: var(--t1) !important; }
+    body.theme-dark .topbar, body.theme-dark .modal-content-new, body.theme-dark .modal-settings-content, body.theme-dark .u-dropdown-panel, body.theme-dark .notif-panel, body.theme-dark .stat-card, body.theme-dark .dash-card, body.theme-dark .cat-card, body.theme-dark .ticket-mini-card, body.theme-dark .support-module, body.theme-dark .staff-card, body.theme-dark .ticket-card, body.theme-dark .card-white { background: var(--surface) !important; color: var(--t1) !important; border-color: var(--border) !important; }
+    body.theme-dark .section-gray, body.theme-dark .bg-gray-50, body.theme-dark [style*="background: #f1f5f9"], body.theme-dark [style*="background-color: #f1f5f9"], body.theme-dark [style*="background:#f1f5f9"] { background: var(--bg) !important; }
+    body.theme-dark .recent-sect, body.theme-dark .ticket-form-grid, body.theme-dark .list-wrapper, body.theme-dark table, body.theme-dark .table-container, body.theme-dark .admin-list { background: var(--surface) !important; }
+    body.theme-dark input, body.theme-dark select, body.theme-dark textarea, body.theme-dark .fsel { background: #0f172a !important; color: var(--t1) !important; border-color: var(--border) !important; }
+    body.theme-dark .refined-table th, body.theme-dark .refined-header { background: #334155 !important; color: var(--t1) !important; border-color: var(--border) !important; }
+    body.theme-dark .refined-table td { border-bottom-color: var(--border) !important; color: var(--t2) !important; }
     body.theme-dark .ts-msg { background: #0f172a !important; color: var(--t1) !important; border-color: var(--border) !important; }
     body.theme-dark .admin-msg { background: #1e293b !important; border-color: var(--primary) !important; }
+    body.theme-dark .btn-ghost { color: var(--t1) !important; border-color: var(--border) !important; }
+    body.theme-dark .btn-ghost:hover { background: #334155 !important; }
+    body.theme-dark span, body.theme-dark p, body.theme-dark h1, body.theme-dark h2, body.theme-dark h3, body.theme-dark h4, body.theme-dark h5, body.theme-dark h6, body.theme-dark label, body.theme-dark div { color: inherit; }
+    body.theme-dark .tb-user-info span, body.theme-dark .nav-item { color: var(--t2) !important; }
+    body.theme-dark .nav-item.active { color: #fff !important; }
 
     /* Toggle Switch */
     .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; margin-left: auto; }

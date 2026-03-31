@@ -15,18 +15,30 @@ const PATHS = {
 
 if (!fs.existsSync(PATHS.attachments)) fs.mkdirSync(PATHS.attachments, { recursive: true });
 
+let dbCache = { tickets: null, notifications: null, audit: null, sequence: null };
+
 function readJSON(file) {
   try {
+    const key = Object.keys(PATHS).find(k => PATHS[k] === file);
+    if (key && dbCache[key]) return JSON.parse(JSON.stringify(dbCache[key]));
+
     if (!fs.existsSync(file)) return [];
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
+    const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+    if (key) dbCache[key] = data;
+    return JSON.parse(JSON.stringify(data));
   } catch (e) { console.error(`[DB-READ-ERR] ${file}:`, e.message); return []; }
 }
 
 function writeJSON(file, data) {
   try {
-    fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
+    const key = Object.keys(PATHS).find(k => PATHS[k] === file);
+    if (key) dbCache[key] = data;
+
+    fs.writeFile(file, JSON.stringify(data, null, 2), 'utf8', (err) => {
+      if(err) console.error(`[DB-WRITE-ERR] ${file}:`, err.message);
+    });
     return true;
-  } catch (e) { console.error(`[DB-WRITE-ERR] ${file}:`, e.message); return false; }
+  } catch (e) { console.error(`[DB-WRITE-ERR-SYNC] ${file}:`, e.message); return false; }
 }
 
 Object.values(PATHS).forEach(p => { 

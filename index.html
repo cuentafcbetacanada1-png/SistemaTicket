@@ -69,19 +69,26 @@
     body.theme-dark .admin-msg { background: #1e293b !important; border-color: var(--primary) !important; }
     body.theme-dark .btn-ghost { color: var(--t1) !important; border-color: var(--border) !important; }
     body.theme-dark .btn-ghost:hover { background: #334155 !important; }
+    /* Global Boldness & Premium Font Enhancements */
+    :root { --font-main: 'Sora', sans-serif; }
+    h2.pt, .pt, h1, h2, h3, h4 { font-family: var(--font-main) !important; font-weight: 850 !important; letter-spacing: -0.03em !important; }
+    .stat-val { font-weight: 900 !important; font-family: var(--font-main) !important; font-size: 1.8rem !important; letter-spacing: -0.04em !important; }
+    .stat-lbl { font-weight: 800 !important; text-transform: uppercase; font-size: 0.75rem !important; letter-spacing: 0.05em !important; opacity: 0.9; }
+    .nav-item span { font-weight: 700 !important; font-size: 0.95rem !important; }
+    .nav-label { font-weight: 900 !important; color: var(--primary) !important; margin-top: 24px !important; letter-spacing: 0.1em !important; font-size: 0.7rem !important; }
+    .btn-primary, .topbar-btn, .login-submit-btn { font-weight: 800 !important; letter-spacing: 0.02em !important; }
+    .badge { font-weight: 850 !important; border-width: 1.5px !important; }
+    .ud-name, .ud-meta div { font-weight: 800 !important; }
+    .sidebar-branding .font-bold { font-weight: 900 !important; }
+    .refined-table th { font-weight: 900 !important; text-transform: uppercase; letter-spacing: 0.08em !important; font-size: 0.72rem !important; }
+    .ticket-title-cell strong { font-weight: 800 !important; font-size: 0.95rem !important; }
+
+    /* Dark Mode Core Inheritance Fixes */
     body.theme-dark span, body.theme-dark p, body.theme-dark h1, body.theme-dark h2, body.theme-dark h3, body.theme-dark h4, body.theme-dark h5, body.theme-dark h6, body.theme-dark label, body.theme-dark div { color: inherit; }
-    body.theme-dark .text-slate-900 { color: #fff !important; }
+    body.theme-dark .text-slate-900 { color: #fff !important; font-weight: 900 !important; }
     body.theme-dark .sidebar-branding img, body.theme-dark .notif-h img { filter: brightness(0) invert(1) !important; opacity: 1 !important; }
     body.theme-dark .tb-user-info span, body.theme-dark .nav-item { color: var(--t2) !important; }
     body.theme-dark .nav-item.active { color: #fff !important; }
-
-    /* Global Boldness Font Enhancements */
-    h2.pt, .pt, h3 { font-family: 'Sora', sans-serif !important; font-weight: 800 !important; letter-spacing: -0.02em !important; }
-    .stat-val { font-weight: 900 !important; font-family: 'Sora', sans-serif !important; }
-    .nav-item span { font-weight: 600 !important; }
-    .nav-label { font-weight: 800 !important; color: var(--primary) !important; margin-top: 20px !important; }
-    .btn-primary, .topbar-btn { font-weight: 700 !important; }
-    .stat-lbl, .ud-name { font-weight: 700 !important; }
 
     /* Toggle Switch */
     .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; margin-left: auto; }

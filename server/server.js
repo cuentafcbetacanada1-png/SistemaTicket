@@ -1,5 +1,7 @@
 'use strict';
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+console.log('[ENV] Buscando variables en:', path.join(__dirname, '..', '.env'), fs.existsSync(path.join(__dirname, '..', '.env')) ? '✅ ENCONTRADO' : '❌ NO ENCONTRADO');
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -201,17 +203,14 @@ const EMAIL_ATTACHMENTS = fs.existsSync(LOGO_PATH) ? [{
   cid: 'logo'
 }] : [];
 
-const ADMIN_RECIPIENTS = [
-  'aprendiz.sistemas@iceberg.com.co',
-  'soporte2@iceberg.com.co',
-  'soporteti@iceberg.com.co',
-  'gustavo.velandia@iceberg.com.co'
-];
+const ADMIN_RECIPIENTS = Users.getAdminEmails();
+console.log(`[MAIL-CONFIG] Administradores de destino: ${ADMIN_RECIPIENTS.length}`);
 
 transporter.verify((err) => {
-  if (err) console.error('[SMTP ERROR]', err.message);
+  if (err) console.error('[SMTP ERROR] No se pudo verificar conexión:', err.message);
   else console.log('[SMTP READY] ✅ Conectado a Office365.');
 });
+
 
 const BACKUP_DIR = path.join(__dirname, 'backups');
 if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
@@ -500,11 +499,20 @@ app.put('/tickets/:id', async (req, res) => {
              msg = `Nuevo comentario de ${actor}`;
           }
 
-          const emailSet = new Set(ADMIN_RECIPIENTS.map(e => e.toLowerCase()));
+          const adminList = Users.getAdminEmails();
+          const emailSet = new Set(adminList.map(e => e.toLowerCase().trim()));
           if (updated.createdBy && updated.createdBy.email) {
               const creatorEmail = updated.createdBy.email.toLowerCase().trim();
-              if (creatorEmail) emailSet.add(creatorEmail);
+              if (creatorEmail && creatorEmail !== 'anon@iceberg.com.co') emailSet.add(creatorEmail);
           }
+          
+          // No enviar correos a destinatarios vacíos
+          const finalRecipients = Array.from(emailSet).filter(e => e && e.includes('@'));
+          if (finalRecipients.length === 0) {
+              console.warn('[MAIL-FLOW] No hay recipientes válidos para esta actualización. Abortando.');
+              return;
+          }
+
           
           const mailBody = renderEmail(updated, 
              isAssignChange ? `Técnico asignado: ${updated.assignedTo}` : (isNoteAdded ? 'Nuevo Comentario' : `Nuevo estado: ${statusLabel}`), 
@@ -521,8 +529,9 @@ app.put('/tickets/:id', async (req, res) => {
             attachments: EMAIL_ATTACHMENTS
           };
           
-          console.log(`[MAIL-FLOW] 🚀 Despachando a ${emailSet.size} correos via motor resiliente.`);
-          await sendMailResilient(broadcastMail);
+          console.log(`[MAIL-FLOW] 🚀 Despachando a ${finalRecipients.length} correos via motor resiliente.`);
+          await sendMailResilient({ ...broadcastMail, to: finalRecipients });
+
 
           await createNotification(`Actualización #${updated.id}`, msg, updated.id, updated.createdBy?.email || 'all', 'info');
           await createNotification(`Actualización #${updated.id}`, msg, updated.id, 'admin', 'info');
@@ -781,8 +790,43 @@ app.get('*', (req, res) => {
   else res.status(404).send();
 });
 
-const server = app.listen(PORT, () => {
-  console.log(`[ICEBERG] ✅ ONLINE | PUERTO: ${PORT} | V: 9.7 (Resilient)`);
+app.post('/admin/test-email', async (req, res) => {
+  try {
+    const actor = req.headers['iceberg-user'] || 'Prueba de Sistema';
+    console.log(`[TEST-MAIL] Solicitado por: ${actor}`);
+    const testMail = {
+      to: [process.env.EMAIL_USER],
+      subject: `🧪 Test de Notificación: IT Portal`,
+      html: `
+        <div style="font-family:sans-serif; border: 1px solid #e2e8f0; border-radius:12px; padding:24px; color:#1e293b;">
+          <h2 style="color:#2563eb; margin-top:0;">Prueba de Conexión Lograda</h2>
+          <p>Este es un correo de prueba generado para verificar la configuración de los motores de envío.</p>
+          <ul style="color:#475569; font-size:14px;">
+            <li><strong>Tiempo:</strong> ${new Date().toLocaleString()}</li>
+            <li><strong>Usuario:</strong> ${actor}</li>
+            <li><strong>Motor MS Graph:</strong> ${process.env.AZURE_CLIENT_SECRET ? 'CONFIGURADO' : 'NO CONFIGURADO'}</li>
+            <li><strong>Motor SendGrid:</strong> ${process.env.SENDGRID_API_KEY ? 'CONFIGURADO' : 'NO CONFIGURADO'}</li>
+          </ul>
+        </div>
+      `
+    };
+    const result = await sendMailResilient(testMail);
+    res.json({ success: !!result, details: result });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+const PORT_VAL = PORT;
+app.listen(PORT_VAL, () => {
+  console.log(`
+  🚀 SERVIDOR CONTROL TI ONLINE
+  ==============================
+  📡 Puerto: ${PORT_VAL}
+  📧 Email:  ${process.env.EMAIL_USER || 'No configurado'}
+  📂 Data:   ${path.join(__dirname, 'data')}
+  ==============================
+  `);
   Users.initialize().catch(() => { });
 
   setTimeout(() => {

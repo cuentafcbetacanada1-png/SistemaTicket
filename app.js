@@ -2149,8 +2149,33 @@ const APP = {
         </button>
       </div>
     `;
+  },
+
+  async testEmail() {
+    const btn = document.getElementById('btn-test-email');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading-spinner-small"></span> Enviando...';
+    }
+    try {
+      const res = await API._fetch('/admin/test-email', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        this.showToast('¡Correo de prueba enviado con éxito! Revisa tu bandeja de entrada.', 'success');
+      } else {
+        this.showToast('El servidor no pudo enviar el correo. Verifica las credenciales en el archivo .env.', 'error');
+      }
+    } catch (e) {
+      this.showToast('Error de conexión con el servidor al intentar enviar el correo.', 'error');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2L15 22 11 13 2 9 22 2"/></svg> Enviar correo de prueba';
+      }
+    }
   }
 };
+
 
 
 window.APP = APP;

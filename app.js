@@ -248,6 +248,11 @@ const APP = {
     const soundToggle = document.getElementById('toggle-sound');
     if (soundToggle) soundToggle.checked = isSoundOn;
 
+    if (localStorage.getItem('ice_darkmode') === 'true') {
+      document.body.classList.add('theme-dark');
+      document.documentElement.classList.add('theme-dark');
+    }
+
     if (this._initialized) {
       await this.refreshData();
       return;
@@ -795,9 +800,11 @@ const APP = {
   toggleDarkMode(isDark) {
     if (isDark) {
       document.body.classList.add('theme-dark');
+      document.documentElement.classList.add('theme-dark');
       localStorage.setItem('ice_darkmode', 'true');
     } else {
       document.body.classList.remove('theme-dark');
+      document.documentElement.classList.remove('theme-dark');
       localStorage.setItem('ice_darkmode', 'false');
     }
   },

@@ -46,22 +46,22 @@
     .ticket-col-right { flex: 1 !important; }
 
     /* Dark Mode Components - Comprehensive Override */
-    body.theme-dark {
-      --bg: #0b1120;
-      --surface: #1e293b;
-      --surface-glass: rgba(30,41,59,0.85);
-      --border: #334155;
-      --border-thick: #475569;
-      --t1: #f8fafc;
-      --t2: #cbd5e1;
-      --t3: #94a3b8;
-      --border-muted: #1e293b;
+    :root.theme-dark, html.theme-dark, body.theme-dark {
+      --bg: #0b1120 !important;
+      --surface: #1e293b !important;
+      --surface-glass: rgba(30,41,59,0.85) !important;
+      --border: #334155 !important;
+      --border-thick: #475569 !important;
+      --t1: #f8fafc !important;
+      --t2: #cbd5e1 !important;
+      --t3: #94a3b8 !important;
+      --border-muted: #1e293b !important;
     }
-    body.theme-dark, body.theme-dark .main-wrap, body.theme-dark .view-pane, body.theme-dark .sidebar { background: var(--bg) !important; color: var(--t1) !important; }
-    body.theme-dark .topbar, body.theme-dark .modal-content-new, body.theme-dark .modal-settings-content, body.theme-dark .u-dropdown-panel, body.theme-dark .notif-panel, body.theme-dark .stat-card, body.theme-dark .dash-card, body.theme-dark .cat-card, body.theme-dark .ticket-mini-card, body.theme-dark .support-module, body.theme-dark .staff-card, body.theme-dark .ticket-card, body.theme-dark .card-white { background: var(--surface) !important; color: var(--t1) !important; border-color: var(--border) !important; }
+    html.theme-dark, html.theme-dark body, body.theme-dark, body.theme-dark .main-wrap, body.theme-dark .view-pane, body.theme-dark .sidebar, body.theme-dark #screen-app { background: var(--bg) !important; color: var(--t1) !important; }
+    body.theme-dark .topbar, body.theme-dark .modal-content-new, body.theme-dark .modal-settings-content, body.theme-dark .u-dropdown-panel, body.theme-dark .notif-panel, body.theme-dark .stat-card, body.theme-dark .dash-card, body.theme-dark .cat-card, body.theme-dark .ticket-mini-card, body.theme-dark .support-module, body.theme-dark .staff-card, body.theme-dark .ticket-card, body.theme-dark .card-white, body.theme-dark [style*="background: white"], body.theme-dark [style*="background:#fff"], body.theme-dark [style*="background-color: white"] { background: var(--surface) !important; color: var(--t1) !important; border-color: var(--border) !important; }
     body.theme-dark .section-gray, body.theme-dark .bg-gray-50, body.theme-dark [style*="background: #f1f5f9"], body.theme-dark [style*="background-color: #f1f5f9"], body.theme-dark [style*="background:#f1f5f9"] { background: var(--bg) !important; }
     body.theme-dark .recent-sect, body.theme-dark .ticket-form-grid, body.theme-dark .list-wrapper, body.theme-dark table, body.theme-dark .table-container, body.theme-dark .admin-list { background: var(--surface) !important; }
-    body.theme-dark input, body.theme-dark select, body.theme-dark textarea, body.theme-dark .fsel { background: #0f172a !important; color: var(--t1) !important; border-color: var(--border) !important; }
+    body.theme-dark input, body.theme-dark select, body.theme-dark textarea, body.theme-dark .fsel { background: #0f172a !important; color: var(--t1) !important; border-color: var(--border) !important; box-shadow: none !important; }
     body.theme-dark .refined-table th, body.theme-dark .refined-header { background: #334155 !important; color: var(--t1) !important; border-color: var(--border) !important; }
     body.theme-dark .refined-table td { border-bottom-color: var(--border) !important; color: var(--t2) !important; }
     body.theme-dark .ts-msg { background: #0f172a !important; color: var(--t1) !important; border-color: var(--border) !important; }

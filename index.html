@@ -45,17 +45,17 @@
     .ticket-col-left { flex: 1.5 !important; }
     .ticket-col-right { flex: 1 !important; }
 
-    /* Dark Mode Components - Comprehensive Override */
+    /* SOPHISTICATED DARK - SLATE/ZINC THEME */
     :root.theme-dark, body.theme-dark {
-      --bg: #02040a !important;
-      --surface: #0c0f1a !important;
-      --surface-glass: rgba(12,15,26,0.92) !important;
-      --border: #1e293b !important;
-      --border-thick: #334155 !important;
-      --t1: #f8fafc !important;
-      --t2: #cbd5e1 !important;
-      --t3: #64748b !important;
-      --border-muted: #111827 !important;
+      --bg: #09090b !important;
+      --surface: #18181b !important;
+      --surface-glass: rgba(24,24,27,0.95) !important;
+      --border: #27272a !important;
+      --border-thick: #3f3f46 !important;
+      --t1: #fafafa !important;
+      --t2: #a1a1aa !important;
+      --t3: #71717a !important;
+      --border-muted: #18181b !important;
     }
     html.theme-dark, body.theme-dark { min-height: 100vh !important; background: var(--bg) !important; color: var(--t1) !important; }
     body.theme-dark .main-wrap, body.theme-dark .view-pane, body.theme-dark .sidebar, body.theme-dark #screen-app, body.theme-dark main, body.theme-dark .content, body.theme-dark section, body.theme-dark .view { background: var(--bg) !important; color: var(--t1) !important; }
@@ -85,11 +85,12 @@
       border-color: var(--border) !important;
     }
 
-    body.theme-dark .btn-ms365 { background: #0f172a !important; color: #fff !important; border-color: var(--border) !important; }
+    body.theme-dark .btn-ms365 { background: #18181b !important; color: #fff !important; border-color: var(--border) !important; }
     body.theme-dark .login-card::before { background: var(--primary-grad) !important; }
     body.theme-dark .login-sub, body.theme-dark .brand-sub { color: var(--t2) !important; }
-    body.theme-dark .topbar-search, body.theme-dark .topbar-search input { background: #0f172a !important; color: var(--t1) !important; border-color: var(--border) !important; }
-    body.theme-dark .topbar-search input:focus { background: #1e293b !important; }
+    body.theme-dark .topbar-search, body.theme-dark .topbar-search input { background: #09090b !important; color: var(--t1) !important; border-color: var(--border) !important; }
+    body.theme-dark .topbar-search input:focus { background: #18181b !important; }
+
 
     body.theme-dark .section-gray, body.theme-dark .bg-gray-50, 
     body.theme-dark [style*="background: #f1f5f9"], body.theme-dark [style*="background-color: #f1f5f9"], 
@@ -103,11 +104,12 @@
     }
 
     body.theme-dark input, body.theme-dark select, body.theme-dark textarea, body.theme-dark .fsel, body.theme-dark .input-readonly { 
-      background: #0f172a !important; 
+      background: #09090b !important; 
       color: var(--t1) !important; 
       border-color: var(--border) !important; 
       box-shadow: none !important; 
     }
+
 
     body.theme-dark .refined-table th, body.theme-dark .refined-header, body.theme-dark .dc-head { 
       background: #334155 !important; 
@@ -162,12 +164,14 @@
     body.theme-dark .ticket-mini-card h4 { color: #fff !important; }
     body.theme-dark .ticket-mini-card [style*="color:var(--t2)"] { color: var(--t3) !important; }
     body.theme-dark .modal-meta-grid { background: rgba(0,0,0,0.2) !important; border-color: var(--border) !important; }
-    body.theme-dark #m-desc { background: #0f172a !important; color: var(--t2) !important; border-color: var(--border) !important; }
+    body.theme-dark #m-desc { background: #09090b !important; color: var(--t2) !important; border-color: var(--border) !important; }
+
     
-    /* Specific Fixes for Dark Night Mode */
-    body.theme-dark .tb-profile { background: #0f172a !important; border: 1px solid var(--border) !important; color: #fff !important; }
-    body.theme-dark .tb-profile:hover { background: #1e293b !important; }
-    body.theme-dark .tb-name { color: #fff !important; font-weight: 750 !important; }
+    /* Specific Fixes for Sophisticated Dark */
+    body.theme-dark .tb-profile { background: #18181b !important; border: 1px solid var(--border) !important; color: #fff !important; }
+    body.theme-dark .tb-profile:hover { background: #27272a !important; }
+    body.theme-dark .tb-name { color: #fff !important; font-weight: 800 !important; }
+
     body.theme-dark .tb-role { color: var(--t3) !important; font-weight: 800 !important; }
     body.theme-dark .tb-avatar-container { border-color: var(--border) !important; }
     
@@ -183,12 +187,13 @@
     }
     
     body.theme-dark .step-box, body.theme-dark .ticket-form-header, body.theme-dark [style*="background: white"], body.theme-dark [style*="background:#fff"] { 
-      background: var(--surface) !important; 
+      background: var(--bg) !important; 
       border-color: var(--border) !important; 
     }
     body.theme-dark .step-title { color: #fff !important; font-weight: 950 !important; }
-    body.theme-dark .ticket-form-grid, body.theme-dark .ticket-form-new { background: var(--bg) !important; border-color: var(--border) !important; }
+    body.theme-dark .ticket-form-grid, body.theme-dark .ticket-form-new { background: var(--surface) !important; border-color: var(--border) !important; }
     body.theme-dark .fg label, body.theme-dark .step-box span { color: var(--t1) !important; font-weight: 850 !important; }
+
     
     body.theme-dark .notif-panel div[style*="background:rgba(255,255,255,0.3)"] { 
       background: rgba(0,0,0,0.3) !important; 

@@ -2009,13 +2009,40 @@ const APP = {
   bindNotifications() {
     const btn = document.getElementById('notif-btn');
     const p = document.getElementById('notif-panel');
-    if (btn) btn.onclick = e => { e.stopPropagation(); p.classList.toggle('active'); if (p.classList.contains('active')) this.fetchNotifications(); };
-    document.getElementById('notif-read-all').onclick = async () => { await API._fetch('/notifications/read-all', { method: 'POST' }); this.fetchNotifications(); };
+    if (btn) btn.onclick = e => { 
+      e.stopPropagation(); 
+      p.classList.toggle('active'); 
+      if (p.classList.contains('active')) this.fetchNotifications(); 
+    };
+
+    const markAllBtn = document.getElementById('notif-read-all');
+    if (markAllBtn) {
+      markAllBtn.onclick = async (e) => {
+        if (e) e.stopPropagation();
+        
+        // 1. Mark local notifications as read
+        const local = Store.getLocalNotifications();
+        local.forEach(n => n.read = true);
+        Store.saveLocalNotifications(local);
+
+        // 2. Mark server notifications as read
+        try {
+          await API._fetch('/notifications/read-all', { method: 'POST' });
+        } catch (err) {
+          console.warn('[NOTIF READ-ALL ERR]', err);
+        }
+
+        // 3. Update UI
+        this.fetchNotifications();
+      };
+    }
+
     document.onclick = () => p.classList.remove('active');
     setInterval(() => {
       if (document.visibilityState === 'visible') this.fetchNotifications();
     }, 10000);
   },
+
 
   async syncOfflineTickets() {
     if (!API._up || !API._dbConnected) return;

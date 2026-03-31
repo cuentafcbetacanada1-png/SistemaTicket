@@ -67,20 +67,29 @@
     body.theme-dark .card-white, body.theme-dark .attachment-zone, body.theme-dark .ci-item, 
     body.theme-dark .filters-bar, body.theme-dark .az-content, body.theme-dark .step-box,
     body.theme-dark .ticket-form-grid, body.theme-dark .dc-head, body.theme-dark .ci-icon,
-    body.theme-dark .admin-toolbar, body.theme-dark [class*="card"], body.theme-dark [class*="box"] { 
+    body.theme-dark .admin-toolbar, body.theme-dark [class*="card"], body.theme-dark [class*="box"],
+    body.theme-dark .sidebar, body.theme-dark .login-card, body.theme-dark .modal, body.theme-dark .m-section p,
+    body.theme-dark .m-note-form, body.theme-dark .modal-ft, body.theme-dark .modal-hd { 
       background: var(--surface) !important; 
       color: var(--t1) !important; 
       border-color: var(--border) !important; 
-      box-shadow: 0 4px 20px rgba(0,0,0,0.2) !important;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
     }
 
     body.theme-dark [style*="background: white"], body.theme-dark [style*="background:#fff"], 
     body.theme-dark [style*="background: #fff"], body.theme-dark [style*="background-color: white"], 
-    body.theme-dark [style*="background-color: #fff"], body.theme-dark [style*="background:white"] { 
+    body.theme-dark [style*="background-color: #fff"], body.theme-dark [style*="background:white"],
+    body.theme-dark [style*="background-color:white"], body.theme-dark [style*="background-color:#fff"] { 
       background: var(--surface) !important; 
       color: var(--t1) !important; 
       border-color: var(--border) !important;
     }
+
+    body.theme-dark .btn-ms365 { background: #0f172a !important; color: #fff !important; border-color: var(--border) !important; }
+    body.theme-dark .login-card::before { background: var(--primary-grad) !important; }
+    body.theme-dark .login-sub, body.theme-dark .brand-sub { color: var(--t2) !important; }
+    body.theme-dark .topbar-search, body.theme-dark .topbar-search input { background: #0f172a !important; color: var(--t1) !important; border-color: var(--border) !important; }
+    body.theme-dark .topbar-search input:focus { background: #1e293b !important; }
 
     body.theme-dark .section-gray, body.theme-dark .bg-gray-50, 
     body.theme-dark [style*="background: #f1f5f9"], body.theme-dark [style*="background-color: #f1f5f9"], 
@@ -152,6 +161,9 @@
     body.theme-dark .ud-header { border-bottom-color: var(--border) !important; }
     body.theme-dark .ticket-mini-card h4 { color: #fff !important; }
     body.theme-dark .ticket-mini-card [style*="color:var(--t2)"] { color: var(--t3) !important; }
+    body.theme-dark .modal-meta-grid { background: rgba(0,0,0,0.2) !important; border-color: var(--border) !important; }
+    body.theme-dark #m-desc { background: #0f172a !important; color: var(--t2) !important; border-color: var(--border) !important; }
+
 
     /* Global Boldness & Premium Font Enhancements */
     :root { --font-main: 'Sora', sans-serif; }

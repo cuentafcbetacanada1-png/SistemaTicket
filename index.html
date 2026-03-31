@@ -69,41 +69,21 @@
     body.theme-dark .ticket-form-grid, body.theme-dark .dc-head, body.theme-dark .ci-icon,
     body.theme-dark .admin-toolbar, body.theme-dark [class*="card"], body.theme-dark [class*="box"],
     body.theme-dark .sidebar, body.theme-dark .login-card, body.theme-dark .modal, body.theme-dark .m-section p,
-    body.theme-dark .m-note-form, body.theme-dark .modal-ft, body.theme-dark .modal-hd,
-    body.theme-dark .tb-profile, body.theme-dark .tb-avatar-container { 
+    body.theme-dark .m-note-form, body.theme-dark .modal-ft, body.theme-dark .modal-hd { 
       background: var(--surface) !important; 
       color: var(--t1) !important; 
       border-color: var(--border) !important; 
-      box-shadow: 0 4px 20px rgba(0,0,0,0.4) !important;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
     }
 
     body.theme-dark [style*="background: white"], body.theme-dark [style*="background:#fff"], 
     body.theme-dark [style*="background: #fff"], body.theme-dark [style*="background-color: white"], 
     body.theme-dark [style*="background-color: #fff"], body.theme-dark [style*="background:white"],
-    body.theme-dark [style*="background-color:white"], body.theme-dark [style*="background-color:#fff"],
-    body.theme-dark [class*="badge"][style*="background"], body.theme-dark [class*="pill"][style*="background"] { 
+    body.theme-dark [style*="background-color:white"], body.theme-dark [style*="background-color:#fff"] { 
       background: var(--surface) !important; 
       color: var(--t1) !important; 
       border-color: var(--border) !important;
     }
-
-    body.theme-dark .tb-profile { background: rgba(0,0,0,0.3) !important; border: 1.5px solid var(--border) !important; border-radius: 40px !important; }
-    body.theme-dark .tb-name { color: #fff !important; font-weight: 800 !important; }
-    body.theme-dark .tb-role { color: var(--t3) !important; font-weight: 700 !important; }
-    body.theme-dark .tb-avatar-container { background: #0f172a !important; border-color: var(--border) !important; }
-
-    body.theme-dark .staff-card [style*="background: white"], 
-    body.theme-dark .staff-card [style*="background:#fff"],
-    body.theme-dark [class*="badge-role"] { 
-      background: #0f172a !important; 
-      color: #fff !important; 
-      border: 1px solid var(--border) !important; 
-    }
-
-    body.theme-dark .cat-desc { color: var(--t3) !important; opacity: 0.8; }
-    body.theme-dark .step-circle { filter: brightness(1.2); }
-    body.theme-dark h4.step-title { color: #fff !important; }
-    body.theme-dark .step-box h4 { color: #fff !important; }
 
     body.theme-dark .btn-ms365 { background: #0f172a !important; color: #fff !important; border-color: var(--border) !important; }
     body.theme-dark .login-card::before { background: var(--primary-grad) !important; }
@@ -183,13 +163,41 @@
     body.theme-dark .ticket-mini-card [style*="color:var(--t2)"] { color: var(--t3) !important; }
     body.theme-dark .modal-meta-grid { background: rgba(0,0,0,0.2) !important; border-color: var(--border) !important; }
     body.theme-dark #m-desc { background: #0f172a !important; color: var(--t2) !important; border-color: var(--border) !important; }
-
+    
+    /* Specific Fixes for Dark Night Mode */
+    body.theme-dark .tb-profile { background: #0f172a !important; border: 1px solid var(--border) !important; color: #fff !important; }
+    body.theme-dark .tb-profile:hover { background: #1e293b !important; }
+    body.theme-dark .tb-name { color: #fff !important; font-weight: 750 !important; }
+    body.theme-dark .tb-role { color: var(--t3) !important; font-weight: 800 !important; }
+    body.theme-dark .tb-avatar-container { border-color: var(--border) !important; }
+    
+    body.theme-dark .staff-role, body.theme-dark .ci-label { 
+      background: rgba(255,255,255,0.05) !important; 
+      color: var(--t3) !important; 
+      border: 1px solid var(--border) !important; 
+      padding: 4px 8px !important; 
+      border-radius: 6px !important;
+      font-weight: 800 !important;
+      text-transform: uppercase !important;
+      font-size: 10px !important;
+    }
+    
+    body.theme-dark .step-box { background: #0f172a !important; border-color: var(--border) !important; }
+    body.theme-dark .step-title { color: #fff !important; font-weight: 850 !important; }
+    body.theme-dark .ticket-form-grid { background: var(--bg) !important; }
+    body.theme-dark .fg label { color: var(--t1) !important; font-weight: 750 !important; }
+    
+    body.theme-dark .notif-panel div[style*="background:rgba(255,255,255,0.3)"] { 
+      background: rgba(0,0,0,0.2) !important; 
+      border-top-color: var(--border) !important; 
+    }
 
     /* Global Boldness & Premium Font Enhancements */
     :root { --font-main: 'Sora', sans-serif; }
-    h2.pt, .pt, h1, h2, h3, h4 { font-family: var(--font-main) !important; font-weight: 850 !important; letter-spacing: -0.03em !important; }
-    .stat-val { font-weight: 900 !important; font-family: var(--font-main) !important; font-size: 1.8rem !important; letter-spacing: -0.04em !important; }
-    .stat-lbl { font-weight: 800 !important; text-transform: uppercase; font-size: 0.75rem !important; letter-spacing: 0.05em !important; opacity: 0.9; }
+    h2.pt, .pt, h1, h2, h3, h4 { font-family: var(--font-main) !important; font-weight: 900 !important; letter-spacing: -0.03em !important; }
+    .stat-val { font-weight: 950 !important; font-family: var(--font-main) !important; font-size: 1.8rem !important; letter-spacing: -0.04em !important; }
+    .stat-lbl { font-weight: 850 !important; text-transform: uppercase; font-size: 0.75rem !important; letter-spacing: 0.05em !important; opacity: 0.9; }
+
     .nav-item span { font-weight: 700 !important; font-size: 0.95rem !important; }
     .nav-label { font-weight: 900 !important; color: var(--primary) !important; margin-top: 24px !important; letter-spacing: 0.1em !important; font-size: 0.7rem !important; }
     .btn-primary, .topbar-btn, .login-submit-btn { font-weight: 800 !important; letter-spacing: 0.02em !important; }

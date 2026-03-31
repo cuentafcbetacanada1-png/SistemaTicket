@@ -103,7 +103,7 @@ async function sendMailMicrosoftGraph(mailOptions) {
         res.on('data', (d) => { resBody += d; });
         res.on('end', () => {
           if (res.statusCode >= 200 && res.statusCode < 300) {
-            console.log(`[MS-GRAPH] ✅ Enviado: ${recipients.join(', ')}`);
+            console.log(`[MS-GRAPH] ✅ Enviado exitosamente a: ${recipients.join(', ')}`);
             resolve([{ recipients, success: true }]);
           } else {
             console.error(`[MS-GRAPH ERR] Status ${res.statusCode}: ${resBody}`);
@@ -111,52 +111,73 @@ async function sendMailMicrosoftGraph(mailOptions) {
           }
         });
       });
-      req.on('error', (e) => { console.error(`[MS-GRAPH ERR] ${e.message}`); resolve(null); });
+      req.on('error', (e) => { 
+        console.error(`[MS-GRAPH ERR] Error de red/petición: ${e.message}`); 
+        resolve(null); 
+      });
       req.write(data); req.end();
     });
-  } catch (e) { console.error(`[MS-GRAPH AUTH ERR] ${e.message}`); return null; }
+  } catch (e) { 
+    console.error(`[MS-GRAPH CATCH] Error fatal en sendMailMicrosoftGraph: ${e.message}`); 
+    return null; 
+  }
 }
 
 async function sendMailResilient(mailOptions) {
-  const recipients = Array.isArray(mailOptions.to) ? mailOptions.to : [mailOptions.to];
-  console.log(`[MAIL-FLOW] Iniciando envío para: ${recipients.join(', ')}`);
+  try {
+    const recipients = Array.isArray(mailOptions.to) ? mailOptions.to.filter(r => r && typeof r === 'string' && r.includes('@')) : [mailOptions.to];
+    if (recipients.length === 0) {
+      console.warn('[MAIL-FLOW] ⚠️ No hay destinatarios válidos. Abortando envío.');
+      return null;
+    }
+    console.log(`[MAIL-FLOW] ✉️ Iniciando envío para ${recipients.length} usuario(s): ${recipients.join(', ')}`);
 
-  if (process.env.AZURE_CLIENT_SECRET) {
-    console.log(`[MAIL-FLOW] Intentando vía Microsoft Graph API...`);
-    const result = await sendMailMicrosoftGraph(mailOptions);
-    if (result) return result;
-    console.warn(`[MAIL-FLOW] Falló Microsoft Graph, intentando respaldo...`);
-  }
+    if (process.env.AZURE_CLIENT_SECRET) {
+      console.log(`[MAIL-FLOW] → Intentando vía Microsoft Graph API...`);
+      try {
+        const result = await sendMailMicrosoftGraph(mailOptions);
+        if (result) return result;
+      } catch (e) {
+        console.warn(`[MAIL-FLOW] ! Error en Microsoft Graph API: ${e.message}`);
+      }
+    }
 
-  if (process.env.SENDGRID_API_KEY) {
-    const data = JSON.stringify({
-      personalizations: [{ to: recipients.map(email => ({ email: email.trim() })) }],
-      from: { email: process.env.EMAIL_USER, name: 'Iceberg Support' },
-      subject: mailOptions.subject,
-      content: [{ type: 'text/html', value: mailOptions.html }]
-    });
-    const options = {
-      hostname: 'api.sendgrid.com',
-      port: 443,
-      path: '/v3/mail/send',
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${process.env.SENDGRID_API_KEY}`, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) }
-    };
-    try {
-      return await new Promise((resolve) => {
-        const req = https.request(options, (res) => {
-          if (res.statusCode >= 200 && res.statusCode < 300) {
-            console.log(`[SENDGRID] ✅ Enviado a: ${recipients.join(', ')}`);
-            resolve([{ recipients, success: true }]);
-          } else { resolve(fallbackSMTP(mailOptions, recipients)); }
+    if (process.env.SENDGRID_API_KEY) {
+      console.log(`[MAIL-FLOW] → Intentando vía SendGrid API...`);
+      try {
+        const data = JSON.stringify({
+          personalizations: [{ to: recipients.map(email => ({ email: email.trim() })) }],
+          from: { email: process.env.EMAIL_USER, name: 'Iceberg Support' },
+          subject: mailOptions.subject,
+          content: [{ type: 'text/html', value: mailOptions.html }]
         });
-        req.on('error', () => resolve(fallbackSMTP(mailOptions, recipients)));
-        req.write(data); req.end();
-      });
-    } catch (e) { return fallbackSMTP(mailOptions, recipients); }
-  }
+        const options = {
+          hostname: 'api.sendgrid.com',
+          port: 443,
+          path: '/v3/mail/send',
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${process.env.SENDGRID_API_KEY}`, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) }
+        };
+        const sgResult = await new Promise((resolve) => {
+          const req = https.request(options, (res) => {
+            if (res.statusCode >= 200 && res.statusCode < 300) {
+              console.log(`[SENDGRID] ✅ Enviado a: ${recipients.join(', ')}`);
+              resolve([{ recipients, success: true }]);
+            } else { resolve(null); }
+          });
+          req.on('error', () => resolve(null));
+          req.write(data); req.end();
+        });
+        if (sgResult) return sgResult;
+      } catch (e) { console.warn(`[MAIL-FLOW] ! Error en SendGrid: ${e.message}`); }
+    }
 
-  return fallbackSMTP(mailOptions, recipients);
+    console.log(`[MAIL-FLOW] → Intentando vía SMTP Tradicional (Fallback)...`);
+    return await fallbackSMTP(mailOptions, recipients);
+  } catch (e) {
+    console.error(`[MAIL-FLOW CRITICAL] Error inesperado en el motor de correo: ${e.message}`);
+    return null;
+  }
 }
 
 async function fallbackSMTP(mailOptions, recipients) {
@@ -396,30 +417,41 @@ app.post('/tickets', async (req, res) => {
 
     await db.addAuditLog(actor, 'CREAR_TICKET', t.id, `Ticket "${t.title}" reportado por ${t.createdBy.name}`, t);
 
-    await createNotification(
-      `Nuevo Ticket: ${t.id}`,
-      `${t.createdBy.name} ha reportado: ${t.title}`,
-      t.id, 'admin', 'info'
-    );
-
-    const adminMail = {
-      to: ADMIN_RECIPIENTS,
-      subject: `Solicitud #${t.id} de IT Portal`,
-      html: renderEmail(t, `Nueva solicitud técnica`, `NOTIFICACIÓN TI`, `NUEVA`, '#335495',
-        `<p>Se ha registrado un caso con ID <strong>${t.id}</strong>.</p>${getGridTable(t)}`),
-      attachments: [
-        ...EMAIL_ATTACHMENTS,
-        ...(t.attachments || []).map(a => ({
-          filename: a.name,
-          data: a.data,
-          type: a.type
-        }))
-      ]
-    };
-    sendMailResilient(adminMail).catch(e => console.error('[ADM-MAIL-ERR]', e.message));
-
     res.status(201).json(t);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+
+    // Background notifications
+    (async () => {
+       try {
+          await createNotification(
+            `Nuevo Ticket: ${t.id}`,
+            `${t.createdBy.name} ha reportado: ${t.title}`,
+            t.id, 'admin', 'info'
+          );
+
+          const adminMail = {
+            to: ADMIN_RECIPIENTS,
+            subject: `Solicitud #${t.id} de IT Portal`,
+            html: renderEmail(t, `Nueva solicitud técnica`, `NOTIFICACIÓN TI`, `NUEVA`, '#335495',
+              `<p>Se ha registrado un caso con ID <strong>${t.id}</strong>.</p>${getGridTable(t)}`),
+            attachments: [
+              ...EMAIL_ATTACHMENTS,
+              ...(t.attachments || []).map(a => ({
+                filename: a.name,
+                data: a.data,
+                type: a.type
+              }))
+            ]
+          };
+          console.log(`[MAIL-FLOW] 🆕 Enviando alerta de nuevo ticket a administradores.`);
+          await sendMailResilient(adminMail);
+       } catch (err) {
+          console.error('[POST-TICKET-NOTIF-ERR]', err);
+       }
+    })();
+  } catch (e) { 
+    console.error('[POST-TICKET-ERR]', e);
+    res.status(500).json({ error: e.message }); 
+  }
 });
 
 app.put('/tickets/:id', async (req, res) => {
@@ -440,47 +472,70 @@ app.put('/tickets/:id', async (req, res) => {
 
     const isNoteAdded = (old.notes || []).length !== (updated.notes || []).length;
     const isHistoryAdded = (old.history || []).length !== (updated.history || []).length;
-    if (updated && old && (old.status !== updated.status || old.assignedTo !== updated.assignedTo || isNoteAdded || isHistoryAdded)) {
-      const isStatusChange = old.status !== updated.status;
-      const isAssignChange = old.assignedTo !== updated.assignedTo;
-      const statusLabel = { 'abierto': 'ABIERTO', 'en-progreso': 'EN PROGRESO', 'resuelto': 'RESUELTO', 'cerrado': 'CERRADO' }[updated.status] || updated.status.toUpperCase();
-      
-      let subject = `📢 Actualización: #${updated.id}`;
-      let htmlIntro = `<p>El ticket <strong>#${updated.id}</strong> ha recibido una nueva actualización por <strong>${actor}</strong>.</p>`;
-      let msg = `El ticket fue actualizado.`;
-      
-      if (isAssignChange) {
-         subject = `🛠️ Asignación: #${updated.id}`;
-         htmlIntro = `<p>El ticket <strong>#${updated.id}</strong> ha sido asignado a <strong>${updated.assignedTo}</strong> por <strong>${actor}</strong>.</p>`;
-         msg = `Asignado a: ${updated.assignedTo}`;
-      } else if (isStatusChange) {
-         subject = `📢 Cambio de Estado: #${updated.id} → ${statusLabel}`;
-         htmlIntro = `<p>El ticket <strong>#${updated.id}</strong> ha cambiado de estado a <strong>${statusLabel}</strong> por <strong>${actor}</strong>.</p>`;
-         msg = `Estado cambiado a: ${statusLabel}`;
-      } else if (isNoteAdded) {
-         subject = `💬 Nuevo Comentario: #${updated.id}`;
-         msg = `Nuevo comentario de ${actor}`;
-      }
-
-      const emailSet = new Set(ADMIN_RECIPIENTS.map(e => e.toLowerCase()));
-      if (updated.createdBy && updated.createdBy.email) {
-          emailSet.add(updated.createdBy.email.toLowerCase());
-      }
-      
-      const broadcastMail = {
-        to: Array.from(emailSet),
-        subject: subject,
-        html: renderEmail(updated, isAssignChange ? `Técnico asignado: ${updated.assignedTo}` : (isNoteAdded ? 'Nuevo Comentario' : `Nuevo estado: ${statusLabel}`), `CONTROL TI`, isAssignChange ? 'ASIGNACIÓN' : statusLabel, '#0f172a',
-          htmlIntro + `<br/>` + getGridTable(updated)),
-        attachments: EMAIL_ATTACHMENTS
-      };
-      sendMailResilient(broadcastMail).catch(e => console.error('[BROAD-MAIL-ERR]', e));
-
-      await createNotification(`Actualización #${updated.id}`, msg, updated.id, updated.createdBy.email, 'info');
-      await createNotification(`Actualización #${updated.id}`, msg, updated.id, 'admin', 'info');
-    }
     res.json(updated);
-  } catch (e) { res.status(500).send(); }
+    
+    // Proceso de notificación posterior a la respuesta (background)
+    (async () => {
+      try {
+        if (updated && old && (old.status !== updated.status || old.assignedTo !== updated.assignedTo || isNoteAdded || isHistoryAdded)) {
+          console.log(`[MAIL-FLOW] Operación detectada en #${id}. Analizando notificaciones...`);
+          const isStatusChange = old.status !== updated.status;
+          const isAssignChange = old.assignedTo !== updated.assignedTo;
+          const statusLabel = { 'abierto': 'ABIERTO', 'en-progreso': 'EN PROGRESO', 'resuelto': 'RESUELTO', 'cerrado': 'CERRADO' }[updated.status] || updated.status.toUpperCase();
+          
+          let subject = `📢 Actualización: #${updated.id}`;
+          let htmlIntro = `<p>El ticket <strong>#${updated.id}</strong> ha recibido una nueva actualización por <strong>${actor}</strong>.</p>`;
+          let msg = `El ticket fue actualizado.`;
+          
+          if (isAssignChange) {
+             subject = `🛠️ Asignación: #${updated.id}`;
+             htmlIntro = `<p>El ticket <strong>#${updated.id}</strong> ha sido asignado a <strong>${updated.assignedTo}</strong> por <strong>${actor}</strong>.</p>`;
+             msg = `Asignado a: ${updated.assignedTo}`;
+          } else if (isStatusChange) {
+             subject = `📢 Cambio de Estado: #${updated.id} → ${statusLabel}`;
+             htmlIntro = `<p>El ticket <strong>#${updated.id}</strong> ha cambiado de estado a <strong>${statusLabel}</strong> por <strong>${actor}</strong>.</p>`;
+             msg = `Estado cambiado a: ${statusLabel}`;
+          } else if (isNoteAdded) {
+             subject = `💬 Nuevo Comentario: #${updated.id}`;
+             msg = `Nuevo comentario de ${actor}`;
+          }
+
+          const emailSet = new Set(ADMIN_RECIPIENTS.map(e => e.toLowerCase()));
+          if (updated.createdBy && updated.createdBy.email) {
+              const creatorEmail = updated.createdBy.email.toLowerCase().trim();
+              if (creatorEmail) emailSet.add(creatorEmail);
+          }
+          
+          const mailBody = renderEmail(updated, 
+             isAssignChange ? `Técnico asignado: ${updated.assignedTo}` : (isNoteAdded ? 'Nuevo Comentario' : `Nuevo estado: ${statusLabel}`), 
+             `CONTROL TI`, 
+             isAssignChange ? 'ASIGNACIÓN' : statusLabel, 
+             '#0f172a',
+             htmlIntro + `<br/>` + getGridTable(updated)
+          );
+
+          const broadcastMail = {
+            to: Array.from(emailSet),
+            subject: subject,
+            html: mailBody,
+            attachments: EMAIL_ATTACHMENTS
+          };
+          
+          console.log(`[MAIL-FLOW] 🚀 Despachando a ${emailSet.size} correos via motor resiliente.`);
+          await sendMailResilient(broadcastMail);
+
+          await createNotification(`Actualización #${updated.id}`, msg, updated.id, updated.createdBy?.email || 'all', 'info');
+          await createNotification(`Actualización #${updated.id}`, msg, updated.id, 'admin', 'info');
+        }
+      } catch (innerErr) {
+        console.error('[MAIL-FLOW BACKGROUND ERR]', innerErr);
+      }
+    })();
+
+  } catch (e) { 
+    console.error('[PUT-TICKET-ERR]', e);
+    res.status(500).json({ error: e.message }); 
+  }
 });
 
 app.delete('/tickets/:id', async (req, res) => {

@@ -46,18 +46,18 @@
     .ticket-col-right { flex: 1 !important; }
 
     /* Dark Mode Components - Comprehensive Override */
-    :root.theme-dark, html.theme-dark, body.theme-dark {
-      --bg: #0b1120 !important;
-      --surface: #1e293b !important;
-      --surface-glass: rgba(30,41,59,0.85) !important;
-      --border: #334155 !important;
-      --border-thick: #475569 !important;
+    :root.theme-dark, body.theme-dark {
+      --bg: #02040a !important;
+      --surface: #0c0f1a !important;
+      --surface-glass: rgba(12,15,26,0.92) !important;
+      --border: #1e293b !important;
+      --border-thick: #334155 !important;
       --t1: #f8fafc !important;
       --t2: #cbd5e1 !important;
-      --t3: #94a3b8 !important;
-      --border-muted: #1e293b !important;
+      --t3: #64748b !important;
+      --border-muted: #111827 !important;
     }
-    html.theme-dark, body.theme-dark { min-height: 100vh !important; background: var(--bg) !important; }
+    html.theme-dark, body.theme-dark { min-height: 100vh !important; background: var(--bg) !important; color: var(--t1) !important; }
     body.theme-dark .main-wrap, body.theme-dark .view-pane, body.theme-dark .sidebar, body.theme-dark #screen-app, body.theme-dark main, body.theme-dark .content, body.theme-dark section, body.theme-dark .view { background: var(--bg) !important; color: var(--t1) !important; }
     
     body.theme-dark .topbar, body.theme-dark .modal-content-new, body.theme-dark .modal-settings-content, 
@@ -172,25 +172,29 @@
     body.theme-dark .tb-avatar-container { border-color: var(--border) !important; }
     
     body.theme-dark .staff-role, body.theme-dark .ci-label { 
-      background: rgba(255,255,255,0.05) !important; 
+      background: rgba(255,255,255,0.03) !important; 
       color: var(--t3) !important; 
       border: 1px solid var(--border) !important; 
       padding: 4px 8px !important; 
       border-radius: 6px !important;
-      font-weight: 800 !important;
+      font-weight: 850 !important;
       text-transform: uppercase !important;
       font-size: 10px !important;
     }
     
-    body.theme-dark .step-box { background: #0f172a !important; border-color: var(--border) !important; }
-    body.theme-dark .step-title { color: #fff !important; font-weight: 850 !important; }
-    body.theme-dark .ticket-form-grid { background: var(--bg) !important; }
-    body.theme-dark .fg label { color: var(--t1) !important; font-weight: 750 !important; }
+    body.theme-dark .step-box, body.theme-dark .ticket-form-header, body.theme-dark [style*="background: white"], body.theme-dark [style*="background:#fff"] { 
+      background: var(--surface) !important; 
+      border-color: var(--border) !important; 
+    }
+    body.theme-dark .step-title { color: #fff !important; font-weight: 950 !important; }
+    body.theme-dark .ticket-form-grid, body.theme-dark .ticket-form-new { background: var(--bg) !important; border-color: var(--border) !important; }
+    body.theme-dark .fg label, body.theme-dark .step-box span { color: var(--t1) !important; font-weight: 850 !important; }
     
     body.theme-dark .notif-panel div[style*="background:rgba(255,255,255,0.3)"] { 
-      background: rgba(0,0,0,0.2) !important; 
+      background: rgba(0,0,0,0.3) !important; 
       border-top-color: var(--border) !important; 
     }
+
 
     /* Global Boldness & Premium Font Enhancements */
     :root { --font-main: 'Sora', sans-serif; }

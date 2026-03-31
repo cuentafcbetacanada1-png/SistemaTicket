@@ -111,9 +111,13 @@ module.exports = {
     if (n) { n.read = true; writeJSON(PATHS.notifications, all); }
   },
 
-  async markAllNotificationsRead() {
+  async markAllNotificationsRead(userEmail, isAdmin) {
     const all = readJSON(PATHS.notifications);
-    all.forEach(n => n.read = true);
+    all.forEach(n => {
+      if (n.userId === 'all') n.read = true;
+      else if (n.userId === 'admin' && isAdmin) n.read = true;
+      else if (n.userId === userEmail) n.read = true;
+    });
     writeJSON(PATHS.notifications, all);
   },
 

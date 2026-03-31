@@ -17,7 +17,7 @@ const transporter = nodemailer.createTransport({
   port: 587,
   secure: false,
   auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-  connectionTimeout: 10000, 
+  connectionTimeout: 10000,
   tls: { rejectUnauthorized: true }
 }, {
   from: `"Iceberg Support" <${process.env.EMAIL_USER}>`
@@ -65,7 +65,7 @@ async function sendMailMicrosoftGraph(mailOptions) {
     const attachments = (mailOptions.attachments || []).map(a => {
       let contentBytes = '';
       if (a.path) {
-        try { contentBytes = fs.readFileSync(a.path).toString('base64'); } catch(e) { return null; }
+        try { contentBytes = fs.readFileSync(a.path).toString('base64'); } catch (e) { return null; }
       } else if (a.content) {
         contentBytes = Buffer.isBuffer(a.content) ? a.content.toString('base64') : Buffer.from(a.content).toString('base64');
       } else if (typeof a.data === 'string' && a.data.includes('base64,')) {
@@ -120,7 +120,7 @@ async function sendMailMicrosoftGraph(mailOptions) {
 async function sendMailResilient(mailOptions) {
   const recipients = Array.isArray(mailOptions.to) ? mailOptions.to : [mailOptions.to];
   console.log(`[MAIL-FLOW] Iniciando envío para: ${recipients.join(', ')}`);
-  
+
   if (process.env.AZURE_CLIENT_SECRET) {
     console.log(`[MAIL-FLOW] Intentando vía Microsoft Graph API...`);
     const result = await sendMailMicrosoftGraph(mailOptions);
@@ -177,13 +177,14 @@ const LOGO_PATH = path.join(__dirname, '..', 'assets', 'logo-iceberg.png');
 const EMAIL_ATTACHMENTS = fs.existsSync(LOGO_PATH) ? [{
   filename: 'logo-iceberg.png',
   path: LOGO_PATH,
-  cid: 'logo' 
+  cid: 'logo'
 }] : [];
 
 const ADMIN_RECIPIENTS = [
   'aprendiz.sistemas@iceberg.com.co',
   'soporte2@iceberg.com.co',
-  'soporteti@iceberg.com.co'
+  'soporteti@iceberg.com.co',
+  'gustavo.velandia@iceberg.com.co'
 ];
 
 transporter.verify((err) => {
@@ -197,7 +198,7 @@ if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
-app.use((req, res, next)   => {
+app.use((req, res, next) => {
   const ext = path.extname(req.path).toLowerCase();
   const sensitiveFiles = ['.env', '.gitignore', '.vscode', '.git', '.json', '.txt'];
   const sourceFiles = ['.js', '.css', '.html'];
@@ -210,10 +211,10 @@ app.use((req, res, next)   => {
   }
 
   if (sourceFiles.includes(ext)) {
-    const isDirectNav = req.headers['sec-fetch-dest'] === 'document' || 
-                        req.headers['sec-fetch-mode'] === 'navigate' ||
-                        (req.headers.accept && req.headers.accept.includes('text/html'));
-                        
+    const isDirectNav = req.headers['sec-fetch-dest'] === 'document' ||
+      req.headers['sec-fetch-mode'] === 'navigate' ||
+      (req.headers.accept && req.headers.accept.includes('text/html'));
+
     const isRoot = req.path === '/' || req.path === '/index.html';
 
     if (!isRoot && (isDirectNav || !req.headers.referer)) {
@@ -250,9 +251,9 @@ app.use((req, res, next)   => {
 
 app.use(express.static(path.join(__dirname, '..')));
 
-app.get('/health', (req, res) => res.json({ 
-  status: 'ok', 
-  stable: true, 
+app.get('/health', (req, res) => res.json({
+  status: 'ok',
+  stable: true,
   v: '9.6 (LocalJSON/StaffSync)',
   dbConnected: db.isConnected(),
   dbMode: 'Local File System (JSON)',
@@ -306,21 +307,21 @@ const renderEmail = (t, title, subtitle, badgeText, badgeColor = '#335495', cont
     </div>`;
 
 const getGridTable = (t) => {
-    const attachHtml = t.attachments && t.attachments.length > 0 
-      ? t.attachments.map(a => {
-          if (a.type && a.type.startsWith('image/')) {
-            return `<div style="display:inline-block; margin-right:15px; margin-top:15px; vertical-align:top; text-align:center;">
+  const attachHtml = t.attachments && t.attachments.length > 0
+    ? t.attachments.map(a => {
+      if (a.type && a.type.startsWith('image/')) {
+        return `<div style="display:inline-block; margin-right:15px; margin-top:15px; vertical-align:top; text-align:center;">
                       <div style="border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; box-shadow:0 6px 15px rgba(0,0,0,0.1); background:#ffffff; margin-bottom:8px;">
                         <img src="${a.data}" style="height:180px; width:auto; display:block;" alt="adjunto">
                       </div>
                       <a href="https://sistema-tickets.up.railway.app?ticketId=${encodeURIComponent(t.id)}" style="color:#2563eb; font-size:12px; font-weight:bold; text-decoration:none; background:#f1f5f9; padding:6px 12px; border-radius:20px; border:1px solid #e2e8f0; display:inline-block;">🔍 VER Y AMPLIAR EN PORTAL</a>
                     </div>`;
-          }
-          return `<div style="display:inline-block; margin-right:8px; margin-top:8px; padding:6px 12px; background:#f1f5f9; border-radius:6px; font-size:11px; color:#475569; border:1px solid #e2e8f0; vertical-align:top;">📎 ${a.name}</div>`;
-        }).join('')
-      : '<span style="color:#94a3b8; font-style:italic;">Sin archivos</span>';
+      }
+      return `<div style="display:inline-block; margin-right:8px; margin-top:8px; padding:6px 12px; background:#f1f5f9; border-radius:6px; font-size:11px; color:#475569; border:1px solid #e2e8f0; vertical-align:top;">📎 ${a.name}</div>`;
+    }).join('')
+    : '<span style="color:#94a3b8; font-style:italic;">Sin archivos</span>';
 
-    return `
+  return `
     <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #e2e8f0; border-radius: 8px; border-collapse: separate; font-size: 13px; overflow: hidden;">
       <tr>
         <td width="55%" style="padding: 15px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; background-color: #fafafa;">
@@ -361,28 +362,28 @@ app.post('/tickets', async (req, res) => {
     try {
       const uInfo = Users.getByEmail(actor);
       if (uInfo && uInfo.name) realName = uInfo.name;
-    } catch(e) {}
+    } catch (e) { }
 
     let createdBy = req.body.createdBy;
     if (!createdBy || !createdBy.name || createdBy.name === 'Sistema' || createdBy.name === 'Usuario Corporativo') {
       createdBy = {
-        id:    actor.includes('@') ? actor.split('@')[0] : 'user-001',
-        name:  realName,
+        id: actor.includes('@') ? actor.split('@')[0] : 'user-001',
+        name: realName,
         email: actor.includes('@') ? actor : (req.body.createdBy?.email || '')
       };
     }
 
     const tData = {
       ...req.body,
-      id:        req.body.id || `Ticket #${Date.now().toString().slice(-4)}`,
-      status:    req.body.status || 'abierto',
-      title:     req.body.title || 'Sin título',
+      id: req.body.id || `Ticket #${Date.now().toString().slice(-4)}`,
+      status: req.body.status || 'abierto',
+      title: req.body.title || 'Sin título',
       description: req.body.description || req.body.title || 'Sin descripción',
       createdBy,
       createdAt: req.body.createdAt || new Date().toISOString(),
       updatedAt: req.body.updatedAt || new Date().toISOString(),
-      notes:     req.body.notes || [],
-      history:   req.body.history || []
+      notes: req.body.notes || [],
+      history: req.body.history || []
     };
 
     const t = await db.create(tData);
@@ -398,7 +399,7 @@ app.post('/tickets', async (req, res) => {
     await createNotification(
       `Nuevo Ticket: ${t.id}`,
       `${t.createdBy.name} ha reportado: ${t.title}`,
-      t.id, 'admin', 'info' 
+      t.id, 'admin', 'info'
     );
 
     const adminMail = {
@@ -437,21 +438,44 @@ app.put('/tickets/:id', async (req, res) => {
       }
     }
 
-    if (updated && old && (old.status !== updated.status || old.assignedTo !== updated.assignedTo)) {
+    const isNoteAdded = (old.notes || []).length !== (updated.notes || []).length;
+    const isHistoryAdded = (old.history || []).length !== (updated.history || []).length;
+    if (updated && old && (old.status !== updated.status || old.assignedTo !== updated.assignedTo || isNoteAdded || isHistoryAdded)) {
       const isStatusChange = old.status !== updated.status;
       const isAssignChange = old.assignedTo !== updated.assignedTo;
       const statusLabel = { 'abierto': 'ABIERTO', 'en-progreso': 'EN PROGRESO', 'resuelto': 'RESUELTO', 'cerrado': 'CERRADO' }[updated.status] || updated.status.toUpperCase();
+      
+      let subject = `📢 Actualización: #${updated.id}`;
+      let htmlIntro = `<p>El ticket <strong>#${updated.id}</strong> ha recibido una nueva actualización por <strong>${actor}</strong>.</p>`;
+      let msg = `El ticket fue actualizado.`;
+      
+      if (isAssignChange) {
+         subject = `🛠️ Asignación: #${updated.id}`;
+         htmlIntro = `<p>El ticket <strong>#${updated.id}</strong> ha sido asignado a <strong>${updated.assignedTo}</strong> por <strong>${actor}</strong>.</p>`;
+         msg = `Asignado a: ${updated.assignedTo}`;
+      } else if (isStatusChange) {
+         subject = `📢 Cambio de Estado: #${updated.id} → ${statusLabel}`;
+         htmlIntro = `<p>El ticket <strong>#${updated.id}</strong> ha cambiado de estado a <strong>${statusLabel}</strong> por <strong>${actor}</strong>.</p>`;
+         msg = `Estado cambiado a: ${statusLabel}`;
+      } else if (isNoteAdded) {
+         subject = `💬 Nuevo Comentario: #${updated.id}`;
+         msg = `Nuevo comentario de ${actor}`;
+      }
 
+      const emailSet = new Set(ADMIN_RECIPIENTS.map(e => e.toLowerCase()));
+      if (updated.createdBy && updated.createdBy.email) {
+          emailSet.add(updated.createdBy.email.toLowerCase());
+      }
+      
       const broadcastMail = {
-        to: ADMIN_RECIPIENTS,
-        subject: isAssignChange ? `🛠️ Asignación: #${updated.id}` : `📢 Cambio de Estado: #${updated.id} → ${statusLabel}`,
-        html: renderEmail(updated, isAssignChange ? `Técnico asignado: ${updated.assignedTo}` : `Nuevo estado: ${statusLabel}`, `CONTROL TI`, isAssignChange ? 'ASIGNACIÓN' : statusLabel, '#0f172a',
-           `<p>El ticket <strong>#${updated.id}</strong> ha sido actualizado por <strong>${actor}</strong>.</p>${getGridTable(updated)}`),
+        to: Array.from(emailSet),
+        subject: subject,
+        html: renderEmail(updated, isAssignChange ? `Técnico asignado: ${updated.assignedTo}` : (isNoteAdded ? 'Nuevo Comentario' : `Nuevo estado: ${statusLabel}`), `CONTROL TI`, isAssignChange ? 'ASIGNACIÓN' : statusLabel, '#0f172a',
+          htmlIntro + `<br/>` + getGridTable(updated)),
         attachments: EMAIL_ATTACHMENTS
       };
       sendMailResilient(broadcastMail).catch(e => console.error('[BROAD-MAIL-ERR]', e));
-      
-      const msg = isStatusChange ? `Estado: ${statusLabel}` : `Asignado a: ${updated.assignedTo}`;
+
       await createNotification(`Actualización #${updated.id}`, msg, updated.id, updated.createdBy.email, 'info');
       await createNotification(`Actualización #${updated.id}`, msg, updated.id, 'admin', 'info');
     }
@@ -468,7 +492,7 @@ app.delete('/tickets/:id', async (req, res) => {
       // Snapshot completo antes de borrar para recuperación permanente
       await db.addAuditLog(actor, 'ELIMINAR_TICKET', id, `Ticket "${t.title}" de ${t.createdBy.name} ELIMINADO. Snapshot disponible.`, t);
       await db.remove(id);
-      
+
       const delMail = {
         to: ADMIN_RECIPIENTS,
         subject: `El ${t.id} ha sido eliminado correctamente`,
@@ -644,7 +668,7 @@ app.post('/auth/sync-microsoft', async (req, res) => {
 app.get('/notifications', async (req, res) => {
   try {
     const userEmail = (req.headers['iceberg-user'] || '').toLowerCase().trim();
-    
+
     if (!userEmail) return res.json([]);
     const isAdmin = Users.isMasterAdmin(userEmail) || Users.getAdminEmails().includes(userEmail);
 
@@ -670,7 +694,9 @@ app.post('/notifications/:id/read', async (req, res) => {
 
 app.post('/notifications/read-all', async (req, res) => {
   try {
-    await db.markAllNotificationsRead();
+    const userEmail = (req.headers['iceberg-user'] || '').toLowerCase().trim();
+    const isAdmin = Users.isMasterAdmin(userEmail) || Users.getAdminEmails().includes(userEmail);
+    await db.markAllNotificationsRead(userEmail, isAdmin);
     res.json({ success: true });
   } catch (e) { res.status(500).send(); }
 });

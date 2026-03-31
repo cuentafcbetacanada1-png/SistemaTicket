@@ -27,7 +27,7 @@ const IT_STAFF = ['Gustavo Velandia', 'Edgar Ducuara', 'Stiven Arevalo', 'Juan D
 
 const ADMINS_LIST = [
   { name: 'Gustavo Velandia', email: 'gustavo.velandia@iceberg.com.co', role: 'Director de Sistemas' },
-  { name: 'Edgar Ducuara', email: 'soporteti@iceberg.com.co', role: 'Ingeniero de Soporte' },
+  { name: 'Edgar Ducuara', email: 'soporteti@iceberg.com.co', role: 'Ingeniero de Desarrollo' },
   { name: 'Stiven Arevalo', email: 'soporte2@iceberg.com.co', role: 'Ingeniero de Soporte' },
   { name: 'Juan Ducuara', email: 'aprendiz.sistemas@iceberg.com.co', secondaryEmail: 'asistente.sistemas@iceberg.com.co', role: 'Asistente de soporte' },
 ];
@@ -80,10 +80,10 @@ const PROD_URL = 'https://sistema-tickets.up.railway.app';
 let API_URL_VAR = (window.location.protocol === 'http:' || window.location.protocol === 'https:') ? window.location.origin : 'http://localhost:3000';
 let API_URL = window.location.origin;
 try {
-    const override = localStorage.getItem('ice_api_override');
-    if (override) API_URL = override;
-    else if (IS_LOCAL_FILE) API_URL = 'http://localhost:3000';
-} catch(e) {}
+  const override = localStorage.getItem('ice_api_override');
+  if (override) API_URL = override;
+  else if (IS_LOCAL_FILE) API_URL = 'http://localhost:3000';
+} catch (e) { }
 
 if (typeof API_URL === 'string' && API_URL.endsWith('/')) API_URL = API_URL.slice(0, -1);
 console.log(`%c[ICEBERG] API Endpoint: %c${API_URL}`, "font-weight:bold; color:#7c3aed;", "font-weight:bold; color:#2563eb;");
@@ -244,6 +244,10 @@ const APP = {
   pendingTicketId: null,
 
   async init() {
+    const isSoundOn = localStorage.getItem('ice_sound') !== 'false';
+    const soundToggle = document.getElementById('toggle-sound');
+    if (soundToggle) soundToggle.checked = isSoundOn;
+
     if (this._initialized) {
       await this.refreshData();
       return;
@@ -772,7 +776,35 @@ const APP = {
   },
 
   showSettings() {
-    this.showToast('Configuración próximamente.', 'info');
+    const modal = document.getElementById('modal-settings');
+    if (modal) {
+      modal.style.display = 'flex';
+      setTimeout(() => modal.style.opacity = '1', 10);
+      document.getElementById('toggle-darkmode').checked = localStorage.getItem('ice_darkmode') === 'true';
+    }
+  },
+
+  closeSettingsModal() {
+    const modal = document.getElementById('modal-settings');
+    if (modal) {
+      modal.style.opacity = '0';
+      setTimeout(() => modal.style.display = 'none', 300);
+    }
+  },
+
+  toggleDarkMode(isDark) {
+    if (isDark) {
+      document.body.classList.add('theme-dark');
+      localStorage.setItem('ice_darkmode', 'true');
+    } else {
+      document.body.classList.remove('theme-dark');
+      localStorage.setItem('ice_darkmode', 'false');
+    }
+  },
+
+  toggleSound(isSound) {
+    if (isSound) localStorage.setItem('ice_sound', 'true');
+    else localStorage.setItem('ice_sound', 'false');
   },
 
   bindSidebar() {
@@ -838,7 +870,7 @@ const APP = {
 
     document.getElementById('admin-nav').style.display = 'none';
     if (document.getElementById('sidebar')) document.getElementById('sidebar').classList.remove('open');
-    this.showToast('Sesión cerrada correctamente.', 'info');
+    this.showToast('Sesión cerrada exitosamente.', 'info');
   },
 
   nav(view) {
@@ -1008,7 +1040,7 @@ const APP = {
       this.attachments = [];
       const attachList = document.getElementById('attachment-list');
       if (attachList) attachList.innerHTML = '';
-      
+
       const az = document.getElementById('attachment-zone');
       const ai = document.getElementById('t-attachments');
       if (az && ai) {
@@ -1562,7 +1594,7 @@ const APP = {
     if (mStatusBox) mStatusBox.innerHTML = this.statusBadge(t.status);
     if (mPriorityBox) mPriorityBox.innerHTML = this.priorityBadge(t.priority);
     if (mUserBox) mUserBox.textContent = `${t.createdBy.name} (${t.area})`;
-    
+
     const mAttach = document.getElementById('m-attachments');
     const mAttachList = document.getElementById('m-attach-list');
     if (mAttach && mAttachList) {
@@ -1574,8 +1606,8 @@ const APP = {
           const clickFn = isImg ? `onclick="APP.showLightbox('${a.data}', '${this.esc(a.name)}'); return false;"` : `href="${a.data}" target="_blank"`;
           return `
             <a ${clickFn} class="attach-card" style="display:flex; cursor:pointer; flex-direction:column; background:var(--bg); border:1px solid var(--border); border-radius:10px; overflow:hidden; text-decoration:none; transition:all 0.2s;" onmouseover="this.style.borderColor='var(--primary)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform=''">
-              ${isImg ? `<img src="${a.data}" style="height:80px; width:100%; object-fit:cover;">` : 
-                `<div style="height:80px; display:flex; align-items:center; justify-content:center; background:var(--primary-light); color:var(--primary);">
+              ${isImg ? `<img src="${a.data}" style="height:80px; width:100%; object-fit:cover;">` :
+              `<div style="height:80px; display:flex; align-items:center; justify-content:center; background:var(--primary-light); color:var(--primary);">
                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                  </div>`}
               <div style="padding:6px 10px; font-size:10px; font-weight:700; color:var(--t1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; border-top:1px solid var(--border); background:white;">
@@ -1961,7 +1993,7 @@ const APP = {
     const log = this._auditLogsCache[idx];
     if (!log || !log.snapshot) return;
     const t = log.snapshot;
-    
+
     // Usar el modal existente pero adaptado para visualización de respaldo
     const modal = document.getElementById('modal-ticket');
     this.openModal(t.id, true, t); // Nuevo parámetro para indicar que es un snapshot
@@ -2053,8 +2085,8 @@ const APP = {
     if (!list) return;
     list.innerHTML = this.attachments.map((a, i) => {
       const isImg = a.type.startsWith('image/');
-      const icon = isImg ? `<img src="${a.data}" class="attach-thumb">` : 
-                   `<div class="attach-thumb" style="display:flex;align-items:center;justify-content:center;color:var(--primary)">
+      const icon = isImg ? `<img src="${a.data}" class="attach-thumb">` :
+        `<div class="attach-thumb" style="display:flex;align-items:center;justify-content:center;color:var(--primary)">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                     </div>`;
       return `
@@ -2062,7 +2094,7 @@ const APP = {
           ${icon}
           <div class="attach-info">
             <span class="attach-name">${this.esc(a.name)}</span>
-            <span class="attach-meta">${(a.size/1024).toFixed(1)} KB</span>
+            <span class="attach-meta">${(a.size / 1024).toFixed(1)} KB</span>
           </div>
           <button type="button" class="btn-remove-attach" onclick="APP.removeAttachment(${i})">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
@@ -2089,13 +2121,13 @@ const APP = {
         align-items:center; justify-content:center; backdrop-filter:blur(10px);
         transition:all 0.3s ease; cursor:zoom-out;
       `;
-      lb.onclick = (e) => { if(e.target === lb || e.target.closest('button')) { lb.style.opacity='0'; setTimeout(()=>{lb.style.display='none'; lb.innerHTML=''}, 200); } };
+      lb.onclick = (e) => { if (e.target === lb || e.target.closest('button')) { lb.style.opacity = '0'; setTimeout(() => { lb.style.display = 'none'; lb.innerHTML = '' }, 200); } };
       document.body.appendChild(lb);
     }
     lb.style.display = 'flex';
     lb.style.opacity = '0';
     setTimeout(() => lb.style.opacity = '1', 10);
-    
+
     lb.innerHTML = `
       <div style="position:relative; max-width:95%; max-height:95%; display:flex; flex-direction:column; align-items:center; animation:zoomIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);">
         <img src="${data}" style="max-width:100%; max-height:80vh; border-radius:12px; border:4px solid white; box-shadow:0 0 50px rgba(0,0,0,0.5); object-fit:contain;">

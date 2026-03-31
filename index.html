@@ -39,6 +39,35 @@
     .text-slate-500 { color: #64748b; }
     .text-slate-800 { color: #1e293b; }
   </style>
+  <style>
+    /* Widen Nuevo Ticket */
+    .new-ticket-container { max-width: 1050px !important; margin: 0 auto; width: 100%; transition: none; }
+    .ticket-col-left { flex: 1.5 !important; }
+    .ticket-col-right { flex: 1 !important; }
+
+    /* Dark Mode Components */
+    body.theme-dark {
+      --bg: #0f172a; --surface: #1e293b; --surface-glass: rgba(30,41,59,0.85); --border: #334155; --border-thick: #475569;
+      --t1: #f8fafc; --t2: #cbd5e1; --t3: #94a3b8; --border-muted: #1e293b;
+    }
+    body.theme-dark .sidebar, body.theme-dark .topbar, body.theme-dark .view-pane { background: var(--bg); }
+    body.theme-dark .stat-card, body.theme-dark .dash-card, body.theme-dark .step-box, body.theme-dark .ticket-mini-card, body.theme-dark .cat-card, body.theme-dark .login-card, body.theme-dark .staff-card, body.theme-dark .support-module, body.theme-dark .u-dropdown-panel, body.theme-dark .notif-panel, body.theme-dark .modal-content-new { background: var(--surface) !important; color: var(--t1); border-color: var(--border) !important; }
+    body.theme-dark input, body.theme-dark select, body.theme-dark textarea { background: #0f172a !important; color: var(--t1) !important; border-color: var(--border) !important; }
+    body.theme-dark .refined-table th { background: #334155; color: var(--t1); }
+    body.theme-dark .refined-table td { border-bottom-color: var(--border); }
+    body.theme-dark .ts-msg { background: #0f172a !important; color: var(--t1) !important; border-color: var(--border) !important; }
+    body.theme-dark .admin-msg { background: #1e293b !important; border-color: var(--primary) !important; }
+
+    /* Toggle Switch */
+    .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; margin-left: auto; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; }
+    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; }
+    input:checked + .slider { background-color: #2563eb; }
+    input:checked + .slider:before { transform: translateX(20px); }
+    .slider.round { border-radius: 24px; }
+    .slider.round:before { border-radius: 50%; }
+  </style>
   <link rel="stylesheet" href="style.css?v=3.5" />
 </head>
 
@@ -371,10 +400,6 @@
               <button class="btn-primary" onclick="APP.nav('new-ticket')" style="display:flex; align-items:center; gap:8px;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:16px;height:16px"><path d="M12 5v14M5 12h14"/></svg>
                 Nuevo Ticket
-              </button>
-              <button class="btn-ghost" onclick="APP.quickSupport()" style="display:flex; align-items:center; gap:8px; border:1px solid var(--border);">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:16px;height:16px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                Soporte Urgente
               </button>
             </div>
           </div>
@@ -1200,6 +1225,31 @@
   </div>
 
 
+
+  <!-- Settings Modal injected -->
+  <div class="modal-overlay" id="modal-settings" style="display:none; opacity:0; transition: opacity 0.3s; z-index: 9999; justify-content:center; align-items:center; position:fixed; inset:0; background:rgba(0,0,0,0.4);">
+    <div class="modal-settings-content" style="background: var(--surface); color: var(--t1); border: 1px solid var(--border); border-radius: 16px; width: 100%; max-width: 450px; position: relative; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom:15px;">
+        <h3 style="display:flex; align-items:center; gap:8px; margin:0; font-size:1.2rem; font-family:'Bricolage Grotesque', sans-serif;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          Configuración
+        </h3>
+        <button style="background:transparent; border:none; color:var(--t2); font-size:1.5rem; cursor:pointer;" onclick="APP.closeSettingsModal()">×</button>
+      </div>
+      <div style="margin-bottom: 20px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px; background:var(--bg); padding:10px 15px; border-radius:10px;">
+          <label style="margin:0; font-weight:600; display:flex; align-items:center; gap:8px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg> 
+            Modo Oscuro
+          </label>
+          <label class="toggle-switch">
+             <input type="checkbox" id="toggle-darkmode" onchange="APP.toggleDarkMode(this.checked)">
+             <span class="slider round"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div id="toast-container"></div>
 

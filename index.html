@@ -111,15 +111,33 @@
       border-color: var(--border) !important;
     }
 
+    body.theme-dark input, body.theme-dark select, body.theme-dark textarea, 
+    body.theme-dark .fsel, body.theme-dark .input-readonly, body.theme-dark [type="tel"], 
+    body.theme-dark [type="text"], body.theme-dark [type="email"], body.theme-dark [type="password"] { 
+      background: #09090b !important; 
+      color: var(--t1) !important; 
+      border-color: var(--border) !important; 
+      box-shadow: none !important; 
+    }
+
+
     body.theme-dark .dash-card h3 { color: #fff !important; font-weight: 900 !important; }
     body.theme-dark [style*="color: #2563eb"], body.theme-dark [style*="color:#2563eb"] { color: var(--primary) !important; font-weight: 850 !important; }
 
-    body.theme-dark .step-box { border-radius: 16px !important; overflow: hidden !important; background: var(--bg) !important; margin-bottom: 24px !important; border: 1px solid var(--border) !important; }
+    body.theme-dark .step-box { border-radius: 16px !important; overflow: hidden !important; background: var(--surface) !important; margin-bottom: 24px !important; border: 1px solid var(--border) !important; }
     body.theme-dark .step-circle { background: #27272a !important; border-color: var(--border-thick) !important; color: #fff !important; }
     body.theme-dark .step-circle.active { background: var(--primary) !important; border-color: var(--primary) !important; }
-    body.theme-dark .step-header, body.theme-dark .step-content { background: var(--surface) !important; border-color: var(--border) !important; }
+    body.theme-dark .step-header, body.theme-dark .step-title { 
+      background: var(--surface) !important; 
+      color: #fff !important; 
+      border-bottom: 1px solid var(--border) !important;
+      padding: 15px 20px !important;
+      margin: 0 !important;
+      border-radius: 16px 16px 0 0 !important;
+    }
+    body.theme-dark .step-content { background: var(--surface) !important; padding: 20px !important; }
     
-    body.theme-dark .attachment-zone { background: rgba(0,0,0,0.2) !important; border: 2px dashed var(--border-thick) !important; }
+    body.theme-dark .attachment-zone { background: rgba(0,0,0,0.2) !important; border: 2px dashed var(--border-thick) !important; color: var(--t2) !important; }
     body.theme-dark .attachment-zone:hover { border-color: var(--primary) !important; background: rgba(255,255,255,0.03) !important; }
 
     body.theme-dark .badge-abierto { background: rgba(37,99,235,0.15) !important; color: #60a5fa !important; border-color: rgba(96,165,250,0.3) !important; }
@@ -135,12 +153,19 @@
     body.theme-dark .stat-ico { background: #27272a !important; color: #fff !important; border-color: var(--border-thick) !important; }
     body.theme-dark .recent-sect, body.theme-dark .ticket-mini-list, body.theme-dark .dash-card { background: var(--surface) !important; border-color: var(--border) !important; }
     body.theme-dark .recent-sect > div, body.theme-dark .dash-card > div { background: transparent !important; }
-    body.theme-dark .step-box, body.theme-dark .step-header, body.theme-dark .step-content { background: var(--surface) !important; border-color: var(--border) !important; }
-    body.theme-dark .step-circle { background: #27272a !important; color: #fff !important; border-color: var(--border-thick) !important; }
-    body.theme-dark .step-circle.active { background: var(--primary) !important; border-color: var(--primary) !important; }
-    body.theme-dark .attachment-zone { background: rgba(0,0,0,0.2) !important; border: 2px dashed var(--border-thick) !important; color: var(--t2) !important; }
     body.theme-dark .cat-card { background: #18181b !important; border-color: var(--border) !important; }
     body.theme-dark #notif-list { background: var(--bg) !important; }
+    
+    body.theme-dark .step-header, body.theme-dark .step-title { 
+      background: var(--surface) !important; 
+      color: #fff !important; 
+      border-bottom: 1px solid var(--border) !important;
+      padding: 15px 20px !important;
+      margin: 0 !important;
+      border-radius: 16px 16px 0 0 !important;
+    }
+    body.theme-dark .step-content { background: var(--surface) !important; padding: 20px !important; }
+
 
     /* Force all white-background elements in dark mode to zinc */
     body.theme-dark div[style*="background: white"], 

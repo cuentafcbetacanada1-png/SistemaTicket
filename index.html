@@ -98,73 +98,63 @@
       background: var(--bg) !important; 
     }
 
-    body.theme-dark .recent-sect, body.theme-dark .ticket-form-grid, body.theme-dark .list-wrapper, 
+    body.theme-dark .recent-sect, body.theme-dark .list-wrapper, 
     body.theme-dark table, body.theme-dark .table-container, body.theme-dark .admin-list { 
-      background: var(--surface) !important; 
+      background: var(--bg) !important; 
     }
 
-    body.theme-dark input, body.theme-dark select, body.theme-dark textarea, body.theme-dark .fsel, body.theme-dark .input-readonly { 
-      background: #09090b !important; 
-      color: var(--t1) !important; 
-      border-color: var(--border) !important; 
-      box-shadow: none !important; 
+    body.theme-dark .dash-card, body.theme-dark .dash-card > div, 
+    body.theme-dark .ticket-mini-list, body.theme-dark .step-box,
+    body.theme-dark .ticket-form-grid, body.theme-dark .attachment-zone,
+    body.theme-dark .m-section {
+      background: var(--surface) !important;
+      border-color: var(--border) !important;
     }
 
+    body.theme-dark .dash-card h3 { color: #fff !important; font-weight: 900 !important; }
+    body.theme-dark [style*="color: #2563eb"], body.theme-dark [style*="color:#2563eb"] { color: var(--primary) !important; font-weight: 850 !important; }
 
-    body.theme-dark .refined-table th, body.theme-dark .refined-header, body.theme-dark .dc-head { 
-      background: #334155 !important; 
-      color: var(--t1) !important; 
-      border-color: var(--border) !important; 
-      font-weight: 850 !important; 
-    }
-
-    body.theme-dark .refined-table td { border-bottom-color: var(--border) !important; color: var(--t2) !important; }
-    body.theme-dark .stat-ico { background: rgba(255,255,255,0.05) !important; color: var(--t1) !important; border: 1px solid var(--border) !important; }
-    body.theme-dark .az-icon svg, body.theme-dark .cat-ico-box svg { color: var(--primary) !important; }
-    body.theme-dark .contact-intro, body.theme-dark .ps { color: var(--t2) !important; }
-    body.theme-dark .ci-value, body.theme-dark .staff-name { color: #fff !important; }
-    body.theme-dark .ci-label { color: var(--t3) !important; }
-    body.theme-dark .cat-name { color: #fff !important; }
-    body.theme-dark .cat-desc { color: var(--t2) !important; }
-    body.theme-dark .step-circle { background: #334155 !important; color: #fff !important; border-color: var(--border) !important; }
-    body.theme-dark .step-circle.active { background: var(--primary) !important; box-shadow: 0 0 15px var(--primary-glow); }
-    body.theme-dark .chart-container-new, body.theme-dark #dash-pie, body.theme-dark #admin-cat-chart { background: var(--surface) !important; border-radius: 18px; }
+    body.theme-dark .step-box { border-radius: 16px !important; overflow: hidden !important; background: var(--bg) !important; margin-bottom: 24px !important; border: 1px solid var(--border) !important; }
+    body.theme-dark .step-circle { background: #27272a !important; border-color: var(--border-thick) !important; color: #fff !important; }
+    body.theme-dark .step-circle.active { background: var(--primary) !important; border-color: var(--primary) !important; }
+    body.theme-dark .step-header, body.theme-dark .step-content { background: var(--surface) !important; border-color: var(--border) !important; }
     
-    body.theme-dark .badge-abierto { background: rgba(37, 99, 235, 0.15) !important; color: #38bdf8 !important; border-color: rgba(56, 189, 248, 0.3) !important; }
-    body.theme-dark .badge-en-progreso { background: rgba(234, 88, 12, 0.15) !important; color: #fb923c !important; border-color: rgba(251, 146, 60, 0.3) !important; }
-    body.theme-dark .badge-resuelto { background: rgba(22, 163, 74, 0.15) !important; color: #4ade80 !important; border-color: rgba(74, 222, 128, 0.3) !important; }
-    body.theme-dark .badge-cerrado { background: rgba(148, 163, 184, 0.1) !important; color: #94a3b8 !important; border-color: #334155 !important; }
-    body.theme-dark .badge-critica { background: rgba(220, 38, 38, 0.15) !important; color: #f87171 !important; border-color: rgba(248, 113, 113, 0.3) !important; }
-    body.theme-dark .badge-alta { background: rgba(234, 88, 12, 0.15) !important; color: #fb923c !important; border-color: rgba(251, 146, 60, 0.3) !important; }
-    body.theme-dark .badge-media { background: rgba(217, 119, 6, 0.15) !important; color: #fbbf24 !important; border-color: rgba(251, 191, 36, 0.3) !important; }
-    body.theme-dark .badge-baja { background: rgba(21, 128, 61, 0.15) !important; color: #4ade80 !important; border-color: rgba(74, 222, 128, 0.3) !important; }
+    body.theme-dark .attachment-zone { background: rgba(0,0,0,0.2) !important; border: 2px dashed var(--border-thick) !important; }
+    body.theme-dark .attachment-zone:hover { border-color: var(--primary) !important; background: rgba(255,255,255,0.03) !important; }
 
-    body.theme-dark .stat-card { border-color: var(--border) !important; border-left-width: 4px !important; }
-    body.theme-dark .stat-card [style*="background"] { background: rgba(255,255,255,0.03) !important; }
-    body.theme-dark .ci-icon { background: rgba(255,255,255,0.05) !important; border: 1px solid var(--border) !important; }
-    body.theme-dark .ci-icon svg { color: var(--primary) !important; }
-    body.theme-dark .step-box { border: 1.5px solid var(--border) !important; background: rgba(30, 41, 59, 0.4) !important; backdrop-filter: blur(8px) !important; }
-    body.theme-dark .step-title { color: #fff !important; }
-    body.theme-dark .pt, body.theme-dark h1, body.theme-dark h2, body.theme-dark h3, body.theme-dark h4 { color: #fff !important; }
-    body.theme-dark .ps { color: var(--t3) !important; }
-    body.theme-dark .fg label { color: var(--t2) !important; }
-    body.theme-dark .fg:focus-within label { color: var(--primary) !important; }
-    body.theme-dark [style*="color: #475569"] { color: var(--t3) !important; }
-    body.theme-dark .pie-bar-wrap { background: rgba(255,255,255,0.05) !important; }
-    body.theme-dark .pie-lbl { color: var(--t2) !important; font-weight: 700 !important; }
-    body.theme-dark .pie-val { color: #fff !important; font-weight: 800 !important; }
-    body.theme-dark .admin-notice, body.theme-dark #admin-dash-notice > div, body.theme-dark [style*="background:#fff7ed"] { 
-        background: rgba(245, 158, 11, 0.1) !important; 
-        color: #fbbf24 !important; 
-        border-color: rgba(251, 191, 36, 0.2) !important; 
+    body.theme-dark .badge-abierto { background: rgba(37,99,235,0.15) !important; color: #60a5fa !important; border-color: rgba(96,165,250,0.3) !important; }
+    body.theme-dark .badge-en-progreso { background: rgba(245,158,11,0.15) !important; color: #fbbf24 !important; border-color: rgba(251,191,36,0.3) !important; }
+    body.theme-dark .badge-resuelto { background: rgba(34,197,94,0.15) !important; color: #4ade80 !important; border-color: rgba(74,222,128,0.3) !important; }
+    body.theme-dark .badge-cerrado { background: rgba(148,163,184,0.1) !important; color: #94a3b8 !important; border-color: #334155 !important; }
+    body.theme-dark .badge-critica { background: rgba(239,68,68,0.15) !important; color: #f87171 !important; border-color: rgba(248,113,113,0.3) !important; }
+    body.theme-dark .badge-alta { background: rgba(249,115,22,0.15) !important; color: #fb923c !important; border-color: rgba(251,146,60,0.3) !important; }
+    body.theme-dark .badge-media { background: rgba(234,179,8,0.15) !important; color: #facc15 !important; border-color: rgba(250,204,21,0.3) !important; }
+    body.theme-dark .badge-baja { background: rgba(34,197,94,0.1) !important; color: #4ade80 !important; border-color: rgba(74,222,128,0.2) !important; }
+
+    body.theme-dark .stat-card { border-color: var(--border) !important; }
+    body.theme-dark .stat-ico { background: #27272a !important; color: #fff !important; border-color: var(--border-thick) !important; }
+    body.theme-dark .recent-sect, body.theme-dark .ticket-mini-list, body.theme-dark .dash-card { background: var(--surface) !important; border-color: var(--border) !important; }
+    body.theme-dark .recent-sect > div, body.theme-dark .dash-card > div { background: transparent !important; }
+    body.theme-dark .step-box, body.theme-dark .step-header, body.theme-dark .step-content { background: var(--surface) !important; border-color: var(--border) !important; }
+    body.theme-dark .step-circle { background: #27272a !important; color: #fff !important; border-color: var(--border-thick) !important; }
+    body.theme-dark .step-circle.active { background: var(--primary) !important; border-color: var(--primary) !important; }
+    body.theme-dark .attachment-zone { background: rgba(0,0,0,0.2) !important; border: 2px dashed var(--border-thick) !important; color: var(--t2) !important; }
+    body.theme-dark .cat-card { background: #18181b !important; border-color: var(--border) !important; }
+    body.theme-dark #notif-list { background: var(--bg) !important; }
+
+    /* Force all white-background elements in dark mode to zinc */
+    body.theme-dark div[style*="background: white"], 
+    body.theme-dark div[style*="background:white"],
+    body.theme-dark section[style*="background:white"],
+    body.theme-dark div[style*="background:#fff"],
+    body.theme-dark div[style*="background: #fff"] { 
+      background: var(--surface) !important; 
+      color: var(--t1) !important;
     }
-    body.theme-dark .ud-item { color: var(--t2) !important; }
-    body.theme-dark .ud-item:hover { background: rgba(255,255,255,0.03) !important; color: #fff !important; }
-    body.theme-dark .ud-header { border-bottom-color: var(--border) !important; }
-    body.theme-dark .ticket-mini-card h4 { color: #fff !important; }
-    body.theme-dark .ticket-mini-card [style*="color:var(--t2)"] { color: var(--t3) !important; }
-    body.theme-dark .modal-meta-grid { background: rgba(0,0,0,0.2) !important; border-color: var(--border) !important; }
-    body.theme-dark #m-desc { background: #09090b !important; color: var(--t2) !important; border-color: var(--border) !important; }
+
+    body.theme-dark .cat-card { background: #18181b !important; border-color: var(--border) !important; }
+    body.theme-dark .cat-card:hover { background: #27272a !important; border-color: var(--primary) !important; }
+
 
     
     /* Specific Fixes for Sophisticated Dark */

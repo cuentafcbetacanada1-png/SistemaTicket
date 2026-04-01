@@ -140,76 +140,28 @@
     body.theme-dark .attachment-zone { background: rgba(0,0,0,0.2) !important; border: 2px dashed var(--border-thick) !important; color: var(--t2) !important; }
     body.theme-dark .attachment-zone:hover { border-color: var(--primary) !important; background: rgba(255,255,255,0.03) !important; }
 
-    body.theme-dark .badge-abierto { background: rgba(37,99,235,0.15) !important; color: #60a5fa !important; border-color: rgba(96,165,250,0.3) !important; }
-    body.theme-dark .badge-en-progreso { background: rgba(245,158,11,0.15) !important; color: #fbbf24 !important; border-color: rgba(251,191,36,0.3) !important; }
-    body.theme-dark .badge-resuelto { background: rgba(34,197,94,0.15) !important; color: #4ade80 !important; border-color: rgba(74,222,128,0.3) !important; }
-    body.theme-dark .badge-cerrado { background: rgba(148,163,184,0.1) !important; color: #94a3b8 !important; border-color: #334155 !important; }
-    body.theme-dark .badge-critica { background: rgba(239,68,68,0.15) !important; color: #f87171 !important; border-color: rgba(248,113,113,0.3) !important; }
-    body.theme-dark .badge-alta { background: rgba(249,115,22,0.15) !important; color: #fb923c !important; border-color: rgba(251,146,60,0.3) !important; }
-    body.theme-dark .badge-media { background: rgba(234,179,8,0.15) !important; color: #facc15 !important; border-color: rgba(250,204,21,0.3) !important; }
-    body.theme-dark .badge-baja { background: rgba(34,197,94,0.1) !important; color: #4ade80 !important; border-color: rgba(74,222,128,0.2) !important; }
-
-    body.theme-dark .stat-card { border-color: var(--border) !important; }
-    body.theme-dark .stat-ico { background: #27272a !important; color: #fff !important; border-color: var(--border-thick) !important; }
-    body.theme-dark .recent-sect, body.theme-dark .ticket-mini-list, body.theme-dark .dash-card { background: var(--surface) !important; border-color: var(--border) !important; }
-    body.theme-dark .recent-sect > div, body.theme-dark .dash-card > div { background: transparent !important; }
-    body.theme-dark .cat-card { background: #18181b !important; border-color: var(--border) !important; }
-    body.theme-dark .cat-grid { background: var(--surface) !important; }
-    body.theme-dark #notif-list { background: var(--bg) !important; }
-    
-    body.theme-dark .step-header, body.theme-dark .step-title { 
+    body.theme-dark .step-box, body.theme-dark .step-header, body.theme-dark .step-title, 
+    body.theme-dark .step-content, body.theme-dark .cat-grid, body.theme-dark .ticket-form-grid { 
       background: var(--surface) !important; 
-      color: #fff !important; 
-      border-bottom: 1px solid var(--border) !important;
-      padding: 15px 20px !important;
-      margin: 0 !important;
-      border-radius: 16px 16px 0 0 !important;
-    }
-    body.theme-dark .step-content { background: var(--surface) !important; padding: 20px !important; border-radius: 0 0 16px 16px !important; }
-
-
-
-    /* Force all white-background elements in dark mode to zinc */
-    body.theme-dark div[style*="background: white"], 
-    body.theme-dark div[style*="background:white"],
-    body.theme-dark section[style*="background:white"],
-    body.theme-dark div[style*="background:#fff"],
-    body.theme-dark div[style*="background: #fff"] { 
-      background: var(--surface) !important; 
+      background-color: var(--surface) !important;
+      border-color: var(--border) !important; 
       color: var(--t1) !important;
     }
+    body.theme-dark .step-box { border: 1px solid var(--border) !important; border-radius: 16px !important; margin-bottom: 24px !important; overflow: hidden !important; }
+    body.theme-dark .step-title { border-bottom: 1px solid var(--border) !important; padding: 16px 20px !important; font-weight: 950 !important; }
+    body.theme-dark .step-circle { background: #27272a !important; color: #fff !important; border: 1px solid var(--border-thick) !important; }
+    body.theme-dark .step-circle.active { background: var(--primary) !important; border-color: var(--primary) !important; box-shadow: 0 0 15px var(--primary-glow) !important; }
+    body.theme-dark .cat-card { background: #121214 !important; border: 1px solid var(--border) !important; }
+    body.theme-dark .cat-card:hover { background: #1c1c1f !important; border-color: var(--primary) !important; }
+    body.theme-dark .cat-name { color: #fff !important; font-weight: 850 !important; }
+    body.theme-dark .cat-desc { color: var(--t3) !important; }
 
-    body.theme-dark .cat-card { background: #18181b !important; border-color: var(--border) !important; }
-    body.theme-dark .cat-card:hover { background: #27272a !important; border-color: var(--primary) !important; }
+    /* Fix for any remaining white utility classes */
+    body.theme-dark .bg-white, body.theme-dark .bg-slate-50, body.theme-dark .bg-gray-50 { background: var(--surface) !important; }
+    body.theme-dark .border-slate-100, body.theme-dark .border-slate-200 { border-color: var(--border) !important; }
+    body.theme-dark .text-slate-800 { color: #fff !important; }
+    body.theme-dark .text-slate-500 { color: var(--t2) !important; }
 
-
-    
-    /* Specific Fixes for Sophisticated Dark */
-    body.theme-dark .tb-profile { background: #18181b !important; border: 1px solid var(--border) !important; color: #fff !important; }
-    body.theme-dark .tb-profile:hover { background: #27272a !important; }
-    body.theme-dark .tb-name { color: #fff !important; font-weight: 800 !important; }
-
-    body.theme-dark .tb-role { color: var(--t3) !important; font-weight: 800 !important; }
-    body.theme-dark .tb-avatar-container { border-color: var(--border) !important; }
-    
-    body.theme-dark .staff-role, body.theme-dark .ci-label { 
-      background: rgba(255,255,255,0.03) !important; 
-      color: var(--t3) !important; 
-      border: 1px solid var(--border) !important; 
-      padding: 4px 8px !important; 
-      border-radius: 6px !important;
-      font-weight: 850 !important;
-      text-transform: uppercase !important;
-      font-size: 10px !important;
-    }
-    
-    body.theme-dark .step-box, body.theme-dark .ticket-form-header, body.theme-dark [style*="background: white"], body.theme-dark [style*="background:#fff"] { 
-      background: var(--bg) !important; 
-      border-color: var(--border) !important; 
-    }
-    body.theme-dark .step-title { color: #fff !important; font-weight: 950 !important; }
-    body.theme-dark .ticket-form-grid, body.theme-dark .ticket-form-new { background: var(--surface) !important; border-color: var(--border) !important; }
-    body.theme-dark .fg label, body.theme-dark .step-box span { color: var(--t1) !important; font-weight: 850 !important; }
 
     
     body.theme-dark .notif-panel { background: var(--surface) !important; border-color: var(--border) !important; border-radius: 16px !important; overflow: hidden !important; }

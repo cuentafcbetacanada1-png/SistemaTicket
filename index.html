@@ -154,6 +154,7 @@
     body.theme-dark .recent-sect, body.theme-dark .ticket-mini-list, body.theme-dark .dash-card { background: var(--surface) !important; border-color: var(--border) !important; }
     body.theme-dark .recent-sect > div, body.theme-dark .dash-card > div { background: transparent !important; }
     body.theme-dark .cat-card { background: #18181b !important; border-color: var(--border) !important; }
+    body.theme-dark .cat-grid { background: var(--surface) !important; }
     body.theme-dark #notif-list { background: var(--bg) !important; }
     
     body.theme-dark .step-header, body.theme-dark .step-title { 
@@ -164,7 +165,8 @@
       margin: 0 !important;
       border-radius: 16px 16px 0 0 !important;
     }
-    body.theme-dark .step-content { background: var(--surface) !important; padding: 20px !important; }
+    body.theme-dark .step-content { background: var(--surface) !important; padding: 20px !important; border-radius: 0 0 16px 16px !important; }
+
 
 
     /* Force all white-background elements in dark mode to zinc */
@@ -681,7 +683,8 @@
                 <span class="step-circle active">1</span>
                 ¿Qué tipo de problema estás teniendo?
               </h4>
-               <div class="cat-grid" id="cat-grid">
+              <div class="step-content">
+                <div class="cat-grid" id="cat-grid">
                   <button type="button" class="cat-card" data-cat="cambio-equipo">
                     <div class="cat-ico-box cat-hw">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
@@ -748,6 +751,7 @@
                     <span class="cat-name">Otro</span>
                   </button>
                 </div>
+              </div>
             </div>
 
             <div class="step-box">
@@ -1018,7 +1022,6 @@
                   </div>
                 </div>
               </div>
-            </div>
             </div>
           </div>
         </section>

@@ -369,10 +369,7 @@ const APP = {
     const urlParams = new URLSearchParams(window.location.search);
     let tid = urlParams.get('ticket') || urlParams.get('ticketId');
     const hash = window.location.hash;
-    // Si el ID tiene un '#' (por ejemplo 'Ticket #35') y no fue encodeado, el navegador lo divide.
-    // Combinamos tid + hash si detectamos este patrón.
     if (tid && hash && !tid.includes('#')) {
-      // Si el ID termina en espacio y el hash empieza con # seguido de números, o similar
       tid = tid.trim() + ' ' + hash;
     }
     this.pendingTicketId = tid;
@@ -744,7 +741,6 @@ const APP = {
       document.getElementById('admin-nav').style.display = 'none';
     }
 
-    // Elite Profile Data
     const eName = document.getElementById('ud-name-full');
     const eEmail = document.getElementById('ud-email-full');
     if (eName) eName.textContent = this.user.name;
@@ -1666,7 +1662,7 @@ const APP = {
              </button>
              <div style="display:flex; align-items:center; gap:12px; min-width:320px; flex:1; justify-content:flex-end;">
                <div style="position:relative; flex:1; max-width:200px;">
-                  <select id="m-status-sel" class="fsel" style="width:100% !important; padding:12px 16px !important; font-weight:800; border:2.2px solid var(--border-thick) !important; text-transform:uppercase; font-size:0.8rem; background-color:white !important; border-radius:12px !important;">
+                  <select id="m-status-sel" class="fsel" style="width:100% !important; padding:12px 16px !important; font-weight:800; border:2.2px solid var(--border-thick) !important; text-transform:uppercase; font-size:0.8rem; border-radius:12px !important;">
                     ${['abierto', 'en-progreso', 'resuelto', 'cerrado'].map(s => `<option value="${s}" ${t.status === s ? 'selected' : ''}>${s.toUpperCase()}</option>`).join('')}
                   </select>
                </div>
@@ -1990,7 +1986,7 @@ const APP = {
           </td>
         </tr>
       `}).join('') || '<tr><td colspan="5" style="text-align:center; padding:40px; color:var(--t3)">Sin registros de auditoría.</td></tr>';
-      this._auditLogsCache = logs; // Guardar para visualización
+      this._auditLogsCache = logs; 
     } catch (err) {
       tbody.innerHTML = `<tr><td colspan="5">Error: ${err.message}</td></tr>`;
     }
@@ -2001,9 +1997,8 @@ const APP = {
     if (!log || !log.snapshot) return;
     const t = log.snapshot;
 
-    // Usar el modal existente pero adaptado para visualización de respaldo
     const modal = document.getElementById('modal-ticket');
-    this.openModal(t.id, true, t); // Nuevo parámetro para indicar que es un snapshot
+    this.openModal(t.id, true, t); 
   },
 
   bindNotifications() {
@@ -2020,19 +2015,16 @@ const APP = {
       markAllBtn.onclick = async (e) => {
         if (e) e.stopPropagation();
         
-        // 1. Mark local notifications as read
         const local = Store.getLocalNotifications();
         local.forEach(n => n.read = true);
         Store.saveLocalNotifications(local);
 
-        // 2. Mark server notifications as read
         try {
           await API._fetch('/notifications/read-all', { method: 'POST' });
         } catch (err) {
           console.warn('[NOTIF READ-ALL ERR]', err);
         }
 
-        // 3. Update UI
         this.fetchNotifications();
       };
     }

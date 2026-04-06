@@ -67,7 +67,6 @@ module.exports = {
   async create(t) {
     const all = readJSON(PATHS.tickets);
     
-    // Generar ID secuencial
     const seq = readJSON(PATHS.sequence);
     const id = `#${seq.nextId || 1}`;
     seq.nextId = (seq.nextId || 1) + 1;
@@ -83,7 +82,6 @@ module.exports = {
     writeJSON(PATHS.tickets, []);
     writeJSON(PATHS.audit, []);
     writeJSON(PATHS.sequence, { nextId: 1 });
-    // Opcional: limpiar archivos adjuntos físicos
     try {
       const files = fs.readdirSync(PATHS.attachments);
       for (const file of files) {

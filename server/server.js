@@ -418,7 +418,6 @@ app.post('/tickets', async (req, res) => {
 
     res.status(201).json(t);
 
-    // Background notifications
     (async () => {
        try {
           await createNotification(
@@ -473,8 +472,7 @@ app.put('/tickets/:id', async (req, res) => {
     const isHistoryAdded = (old.history || []).length !== (updated.history || []).length;
     res.json(updated);
     
-    // Proceso de notificación posterior a la respuesta (background)
-    (async () => {
+    (async () => {  
       try {
         if (updated && old && (old.status !== updated.status || old.assignedTo !== updated.assignedTo || isNoteAdded || isHistoryAdded)) {
           console.log(`[MAIL-FLOW] Operación detectada en #${id}. Analizando notificaciones...`);
@@ -553,7 +551,6 @@ app.delete('/tickets/:id', async (req, res) => {
     const actor = req.headers['iceberg-user'] || 'Admin';
     const t = await db.getById(id);
     if (t) {
-      // Snapshot completo antes de borrar para recuperación permanente
       await db.addAuditLog(actor, 'ELIMINAR_TICKET', id, `Ticket "${t.title}" de ${t.createdBy.name} ELIMINADO. Snapshot disponible.`, t);
       await db.remove(id);
 

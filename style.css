@@ -15,7 +15,7 @@ button, a, input, select, textarea, .nav-item, .cat-card, .stat-card, .ticket-mi
 }
 
 :root {
-  --primary: #2563eb;
+  --primary: #2c62d6;
   --primary-alt: #1d4ed8;
   --primary-grad: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
   --primary-light: rgba(37, 99, 235, 0.1);
@@ -156,6 +156,56 @@ body {
 .cat-card:hover {
   transform: translateY(-3px) scale(1.02) !important;
   box-shadow: 0 12px 24px rgba(37, 99, 235, 0.08) !important;
+}
+
+/* AI Assistant Styles */
+.note-card.ai-note {
+  background: #f5f3ff !important;
+  border: 1.5px solid #ddd6fe !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.note-card.ai-note::after {
+  content: '🤖 AI';
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #7c3aed;
+  background: #ede9fe;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.note-card.ai-note h3 {
+  color: #5b21b6;
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.note-card.ai-note strong {
+  color: #7c3aed;
+}
+
+canvas {
+  max-width: 100%;
+}
+
+.pie-chart-container {
+  position: relative;
+  width: 100%;
+  padding: 10px;
+}
+
+@media (max-width: 640px) {
+  .chart-canvas {
+    max-height: 200px;
+  }
 }
 
 

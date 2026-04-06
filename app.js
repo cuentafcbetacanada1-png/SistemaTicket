@@ -242,6 +242,8 @@ const APP = {
   openTicketId: null,
   selectedCategory: '',
   pendingTicketId: null,
+  _charts: {},
+
 
   async init() {
     const isSoundOn = localStorage.getItem('ice_sound') !== 'false';
@@ -973,24 +975,39 @@ const APP = {
     const pie = document.getElementById('dash-pie');
     if (pie) {
       const statusData = [
-        { lbl: 'Abiertos', val: open, color: 'var(--warning)' },
-        { lbl: 'En progreso', val: prog, color: 'var(--accent)' },
-        { lbl: 'Resueltos', val: res, color: 'var(--success)' },
+        { lbl: 'Abiertos', val: open, color: '#f59e0b' },
+        { lbl: 'En progreso', val: prog, color: '#6366f1' },
+        { lbl: 'Resueltos', val: res, color: '#10b981' },
       ].filter(d => d.val > 0);
 
       if (mine.length === 0) {
         pie.innerHTML = this.emptyState('Sin tickets.', 'Crea tu primera solicitud.', true);
       } else {
-        pie.innerHTML = `<div class="pie-items">
-          ${statusData.map(d => `
-            <div class="pie-item">
-              <span class="pie-lbl">${d.lbl}</span>
-              <div class="pie-bar-wrap">
-                <div class="pie-bar" style="width:${Math.round(d.val / mine.length * 100)}%; background:${d.color}"></div>
-              </div>
-              <span class="pie-val">${d.val}</span>
-            </div>`).join('')}
-        </div>`;
+        pie.innerHTML = '<canvas id="user-pie-chart" style="max-height: 220px;"></canvas>';
+        setTimeout(() => {
+          if (this._charts['user-pie']) this._charts['user-pie'].destroy();
+          const ctx = document.getElementById('user-pie-chart').getContext('2d');
+          this._charts['user-pie'] = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+              labels: statusData.map(d => d.lbl),
+              datasets: [{
+                data: statusData.map(d => d.val),
+                backgroundColor: statusData.map(d => d.color),
+                borderWidth: 0,
+                hoverOffset: 10
+              }]
+            },
+            options: {
+              cutout: '70%',
+              plugins: {
+                legend: { position: 'bottom', labels: { usePointStyle: true, font: { family: 'Sora', weight: '600' } } },
+                tooltip: { backgroundColor: '#18181b', titleFont: { family: 'Sora' }, bodyFont: { family: 'Inter' } }
+              },
+              animation: { animateScale: true }
+            }
+          });
+        }, 0);
       }
     }
 
@@ -1314,17 +1331,36 @@ const APP = {
     if (catEl) {
       const catCount = {};
       all.forEach(t => { catCount[t.category] = (catCount[t.category] || 0) + 1; });
-      const html = Object.entries(CAT_LABELS).map(([key, label]) => {
-        const count = catCount[key] || 0;
-        const pct = all.length ? Math.round(count / all.length * 100) : 0;
-        return `
-                <div class="pie-item">
-                    <span class="pie-lbl">${label}</span>
-                    <div class="pie-bar-wrap"><div class="pie-bar" style="width:${pct}%; background:${CAT_COLORS[key] || '#64748b'}"></div></div>
-                    <span class="pie-val">${count}</span>
-                </div>`;
-      }).join('');
-      catEl.innerHTML = html || '<div style="text-align:center; padding:40px; color:var(--t3)">Sin datos disponibles para cargar el gráfico.</div>';
+      const chartData = Object.entries(CAT_LABELS).map(([key, label]) => ({
+        label, count: catCount[key] || 0, color: CAT_COLORS[key] || '#64748b'
+      })).filter(d => d.count > 0);
+
+      if (all.length === 0) {
+        catEl.innerHTML = '<div style="text-align:center; padding:40px; color:var(--t3)">Sin datos disponibles.</div>';
+      } else {
+        catEl.innerHTML = '<canvas id="admin-category-chart" style="max-height: 250px;"></canvas>';
+        setTimeout(() => {
+          if (this._charts['admin-cat']) this._charts['admin-cat'].destroy();
+          const ctx = document.getElementById('admin-category-chart').getContext('2d');
+          this._charts['admin-cat'] = new Chart(ctx, {
+            type: 'pie',
+            data: {
+              labels: chartData.map(d => d.label),
+              datasets: [{
+                data: chartData.map(d => d.count),
+                backgroundColor: chartData.map(d => d.color),
+                borderWidth: 2,
+                borderColor: localStorage.getItem('ice_darkmode') === 'true' ? '#18181b' : '#fff'
+              }]
+            },
+            options: {
+              plugins: {
+                legend: { position: 'right', labels: { boxWidth: 12, padding: 15, font: { family: 'Sora', size: 11, weight: '600' } } }
+              }
+            }
+          });
+        }, 0);
+      }
     }
 
     const critEl = document.getElementById('admin-critical-list');
@@ -1641,25 +1677,46 @@ const APP = {
     }
 
     if (mNotesList) {
-      mNotesList.innerHTML = (t.notes || []).map(n => `
-        <div class="note-card" style="padding:16px; background:white; border:1px solid var(--border); border-radius:12px; box-shadow:var(--sh-sm);">
-           <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-              <span style="font-size:0.75rem; font-weight:800; color:var(--primary);">${this.esc(n.author)}</span>
-              <span style="font-size:0.7rem; font-weight:600; color:var(--t3); text-transform:uppercase;">${this.timeAgo(n.date)}</span>
-           </div>
-           <div style="font-size:0.85rem; color:var(--t2); line-height:1.5;">${this.esc(n.text)}</div>
-        </div>
-      `).join('') || `<div style="padding:20px; text-align:center; color:var(--t3); border:1px dashed var(--border); border-radius:12px;">No hay actividad registrada aún.</div>`;
+      mNotesList.innerHTML = (t.notes || []).map(n => {
+        if (n.isAi) {
+          // Parse markdown-like content for preview
+          const formattedText = n.text
+            .replace(/### (.*)/g, '<h3>$1</h3>')
+            .replace(/\*\*(.*)\*\*/g, '<strong>$1</strong>')
+            .replace(/\n/g, '<br>');
+
+          return `
+            <div class="note-card ai-note" style="padding:16px; border-radius:12px; box-shadow:var(--sh-sm);">
+               <div style="font-size:0.85rem; color:var(--t2); line-height:1.6;">${formattedText}</div>
+               <div style="font-size:0.7rem; font-weight:700; color:#a78bfa; margin-top:12px; text-transform:uppercase;">${this.timeAgo(n.date)}</div>
+            </div>
+          `;
+        }
+        return `
+          <div class="note-card" style="padding:16px; background:white; border:1px solid var(--border); border-radius:12px; box-shadow:var(--sh-sm);">
+             <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                <span style="font-size:0.75rem; font-weight:800; color:var(--primary);">${this.esc(n.author)}</span>
+                <span style="font-size:0.7rem; font-weight:600; color:var(--t3); text-transform:uppercase;">${this.timeAgo(n.date)}</span>
+             </div>
+             <div style="font-size:0.85rem; color:var(--t2); line-height:1.5;">${this.esc(n.text)}</div>
+          </div>
+        `;
+      }).join('') || `<div style="padding:20px; text-align:center; color:var(--t3); border:1px dashed var(--border); border-radius:12px;">No hay actividad registrada aún.</div>`;
     }
 
     if (mFooter) {
       if (isAdmin && !isSnapshot) {
         mFooter.innerHTML = `
           <div style="display:flex; align-items:center; gap:16px; width:100%; justify-content:space-between; flex-wrap:wrap;">
-             <button onclick="APP.confirmDeleteTicket('${t.id}')" style="padding:12px 20px; border-radius:12px; border:2.2px solid #fecaca; background:#fff1f2; color:#be123c; font-weight:800; font-size:0.85rem; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; gap:8px;" onmouseover="this.style.background='#ffe4e6'" onmouseout="this.style.background='#fff1f2'">
-               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M10 11v6" /><path d="M14 11v6" /></svg>
-               Eliminar Ticket
-             </button>
+             <div style="display:flex; gap:8px;">
+               <button onclick="APP.confirmDeleteTicket('${t.id}')" style="padding:10px 16px; border-radius:12px; border:2.2px solid #fecaca; background:#fff1f2; color:#be123c; font-weight:800; font-size:0.8rem; cursor:pointer;" title="Eliminar Ticket">
+                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M10 11v6" /><path d="M14 11v6" /></svg>
+               </button>
+               <button id="ai-assist-btn" onclick="APP.askAI('${t.id}')" style="padding:10px 16px; border-radius:12px; border:2.2px solid #ddd6fe; background:#f5f3ff; color:#6d28d9; font-weight:800; font-size:0.8rem; cursor:pointer; display:flex; align-items:center; gap:8px;">
+                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 8v4l3 3"/></svg>
+                 🤖 Asistente AI
+               </button>
+             </div>
              <div style="display:flex; align-items:center; gap:12px; min-width:320px; flex:1; justify-content:flex-end;">
                <div style="position:relative; flex:1; max-width:200px;">
                   <select id="m-status-sel" class="fsel" style="width:100% !important; padding:12px 16px !important; font-weight:800; border:2.2px solid var(--border-thick) !important; text-transform:uppercase; font-size:0.8rem; border-radius:12px !important;">
@@ -1709,6 +1766,70 @@ const APP = {
     this.tickets = await API.getTickets();
     this.openModal(this.openTicketId);
     this.showToast('Nota técnica agregada.', 'success');
+  },
+
+  async askAI(tid) {
+    const t = this.tickets.find(x => x.id === tid);
+    if (!t) return;
+
+    const btn = document.getElementById('ai-assist-btn');
+    const originalContent = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner" style="width:14px; height:14px; border-width:2px; border-top-color:var(--primary);"></span> Analizando con Gemini...';
+    btn.disabled = true;
+
+    try {
+      // Simulamos la llamada a la API de IA (o la llamamos si existe el endpoint)
+      // En un entorno real, esto llamaría a API._fetch('/ai/analyze', { method: 'POST', body: JSON.stringify({ ticket: t }) })
+      await new Promise(r => setTimeout(r, 1800));
+
+      const analysis = this._simulateAIAnalysis(t);
+
+      // Mostramos el resultado en un modal o en las notas
+      this.showToast('Análisis de IA completado', 'success');
+
+      // Actualizamos la categoría si la IA sugiere una distinta y el admin lo desea
+      // O simplemente mostramos la sugerencia en las notas
+      const aiNote = {
+        author: '🤖 Asistente Gemini AI',
+        text: `### Análisis Automático\n**Categoría Sugerida:** ${analysis.category}\n**Resumen:** ${analysis.summary}\n\n**Respuesta Sugerida:**\n"${analysis.suggestion}"`,
+        date: new Date().toISOString(),
+        isAi: true
+      };
+
+      const notes = [...(t.notes || []), aiNote];
+      await API.updateTicket(t.id, { notes });
+      this.tickets = await API.getTickets();
+      this.openModal(tid);
+
+    } catch (err) {
+      this.showToast('Error al conectar con la IA', 'error');
+    } finally {
+      btn.innerHTML = originalContent;
+      btn.disabled = false;
+    }
+  },
+
+  _simulateAIAnalysis(t) {
+    const desc = (t.description || '').toLowerCase();
+    let cat = t.category;
+    let suggestion = "Hola, hemos recibido tu solicitud y un técnico la revisará pronto.";
+
+    if (desc.includes('internet') || desc.includes('wifi') || desc.includes('red') || desc.includes('lento')) {
+      cat = 'red-conectividad';
+      suggestion = "Hola, parece que tienes problemas de red. Por favor, verifica si el cable de red está conectado o reinicia tu equipo mientras un técnico revisa el estado del router central.";
+    } else if (desc.includes('password') || desc.includes('contraseña') || desc.includes('acceso') || desc.includes('permisos')) {
+      cat = 'acceso-permisos';
+      suggestion = "Hola, para restablecer tu contraseña o permisos, necesitaremos validar tu identidad. Por favor, ten a la mano tu documento de identidad para la validación remota.";
+    } else if (desc.includes('pantalla') || desc.includes('teclado') || desc.includes('pc') || desc.includes('prende')) {
+      cat = 'reparacion-arreglo';
+      suggestion = "Hola, lamentamos el fallo en tu hardware. Un técnico se desplazará a tu puesto para revisar el equipo físicamente en los próximos 30 minutos.";
+    }
+
+    return {
+      category: CAT_LABELS[cat] || cat,
+      summary: t.description.length > 50 ? t.description.substring(0, 100) + '...' : t.description,
+      suggestion: suggestion
+    };
   },
 
   closeModal() {
